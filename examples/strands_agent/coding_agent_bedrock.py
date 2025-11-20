@@ -2,11 +2,12 @@
 Minimal Strands-Agents-based coding agent that uses the `CodeSandbox` to execute code in a sandbox environment.
 """
 
-from code_sandbox import CodeSandbox
 from strands import Agent
-from strands.models import BedrockModel
+from strands.models.bedrock import BedrockModel
 
-# The default model is `claude-4.0`
+from code_sandbox import CodeSandbox
+
+# Default to `Claude 4.0` model on AWS Bedrock
 model = BedrockModel()
 
 code_sandbox = CodeSandbox(
