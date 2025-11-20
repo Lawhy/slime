@@ -19,7 +19,7 @@ class CodeSandbox:
 
     @tool
     def execute_code(self, code: str) -> str:
-        """Execute the code in the sandbox environment."""
+        """Execute the Python code in the sandbox environment."""
         result = self.session.run(code)
         return result.to_json()
 
