@@ -1,4 +1,9 @@
+import os
+
 from datasets import load_dataset
+
+root_dir = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.join(root_dir, "data")
 
 
 def transform(example):
@@ -9,7 +14,7 @@ def transform(example):
 
 
 if __name__ == "__main__":
-
     dataset = load_dataset("BytedTsinghua-SIA/DAPO-Math-17k", split="train")
     dataset = dataset.map(transform, remove_columns=dataset.column_names)
-    dataset.to_json("dapo_math_17k_cleaned.jsonl", orient="records", lines=True)
+    os.makedirs(data_dir, exist_ok=True)
+    dataset.to_json(os.path.join(data_dir, "dapo_math_17k_cleaned.jsonl"), orient="records", lines=True)
