@@ -12,6 +12,7 @@ docker run --gpus all \
     --model Qwen/Qwen3-0.6B
 """
 
+import json
 from strands import Agent
 from strands.models.openai import OpenAIModel
 from strands_tools import calculator
@@ -31,3 +32,9 @@ model = OpenAIModel(
 if __name__ == "__main__":
     agent = Agent(model=model, tools=[calculator])
     agent("What is the square root of 16?")
+    print("\n\n-------------View OpenAI-formatted Messages------------------")
+    print(
+        json.dumps(
+            agent.model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt), indent=2
+        )
+    )
