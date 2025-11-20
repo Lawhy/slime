@@ -1,5 +1,5 @@
 """
-Minimal Strands-Agents-based math agent that uses the `OpenAIModel` to calculate the square root of 16.
+Minimal Strands-Agents-based math agent that uses `calculator` tool (`sympy`-based).
 
 To start the vLLM server:
 
@@ -16,14 +16,12 @@ from strands import Agent
 from strands.models.openai import OpenAIModel
 from strands_tools import calculator
 
-# Configure OpenAIModel to use vLLM-hosted model
-# IMPORTANT: model_id MUST match exactly what vLLM is serving!
 model = OpenAIModel(
     client_args={
         "api_key": "EMPTY",
         "base_url": "http://240.10.0.8:8000/v1",
     },
-    model_id="Qwen/Qwen3-0.6B",  # Must match the --model flag in vLLM command
+    model_id="Qwen/Qwen3-0.6B",
     params={
         "max_tokens": 2048,
         "temperature": 1.0,
