@@ -33,8 +33,11 @@ if __name__ == "__main__":
     agent = Agent(model=model, tools=[calculator])
     agent("What is the square root of 16?")
     print("\n\n-------------View OpenAI-formatted Messages------------------")
+    openai_messages = agent.model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt)
+    for message in openai_messages:
+        message["content"] = message["content"][0]["text"]
     print(
         json.dumps(
-            agent.model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt), indent=2
+            openai_messages, indent=2
         )
     )
