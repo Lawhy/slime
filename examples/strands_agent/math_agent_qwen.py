@@ -20,7 +20,7 @@ from strands_tools import calculator
 model = OpenAIModel(
     client_args={
         "api_key": "EMPTY",
-        "base_url": "http://240.10.0.8:8000/v1",
+        "base_url": "http://localhost:8000/v1",
     },
     model_id="Qwen/Qwen3-0.6B",
     params={
