@@ -41,7 +41,7 @@ async def main():
         n_samples_per_prompt=1,
     )
     
-    sampling_params = {"max_new_tokens": 2048, "temperature": 1.0, "top_p": 1.0}
+    sampling_params = {"max_new_tokens": 32768, "temperature": 1.0, "top_p": 1.0}
     
     print("Testing generate function with Qwen3-8B...")
     print(f"Ground Truth: {sample.label}\n")
