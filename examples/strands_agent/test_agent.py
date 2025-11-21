@@ -9,7 +9,7 @@ docker run --gpus all \
     vllm/vllm-openai:latest \
     --enable-auto-tool-choice \
     --tool-call-parser hermes \
-    --model Qwen/Qwen3-0.6B
+    --model Qwen/Qwen3-8B
 
 To start the SGLang server:
 
