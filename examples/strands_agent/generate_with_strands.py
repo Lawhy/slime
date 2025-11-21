@@ -145,11 +145,12 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
             loss_masks.extend([1] * (len(response_token_ids) - len(loss_masks)))
 
         # Extract just the response text for logging/storage
-        # Include full conversation with tools for training
+        # This is in chat template format with all tool call tokens - needed for training
         full_response = full_conversation[len(prompt_text) :]
         
-        # Also extract a human-readable summary (assistant messages only) for debugging
+        # Debug output
         if os.environ.get("DEBUG_STRANDS"):
+            # Also extract human-readable assistant text for debugging
             assistant_texts = []
             for msg in openai_messages[len(initial_prompt_messages):]:
                 if msg.get("role") == "assistant" and "content" in msg:
@@ -161,11 +162,17 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
                         text = content
                     if text.strip():
                         assistant_texts.append(text)
+            
             print("\n" + "="*80)
-            print("DEBUG: Assistant Text Responses")
+            print("DEBUG: Chat Template Response (for training)")
+            print("="*80)
+            print(full_response[:500])
+            print("\n" + "="*80)
+            print("DEBUG: Human-Readable Assistant Text (for viewing)")
             print("="*80)
             for i, text in enumerate(assistant_texts):
-                print(f"\nAssistant Response {i+1}:\n{text[:500]}")
+                print(f"\nAssistant Response {i+1}:\n{text[:300]}")
+            print("="*80)
 
         # Set sample attributes
         sample.tokens = prompt_tokens_ids + response_token_ids
