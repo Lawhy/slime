@@ -36,7 +36,8 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     )
 
     # Create agent with calculator tool
-    agent = Agent(model=model, tools=[calculator])
+    tools_list = [calculator]
+    agent = Agent(model=model, tools=tools_list)
 
     # Track tool calls
     tool_call_count = 0
@@ -129,7 +130,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
         # Store information for wandb logging
         sample.payload_text = sample.prompt + full_response
         sample.payload_has_system = True  # strands uses system prompts
-        sample.payload_has_tools = len(agent.tools) > 0
+        sample.payload_has_tools = len(tools_list) > 0
 
         # Store tool call count for reward calculation
         sample.tool_call_count = tool_call_count
@@ -145,7 +146,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
                 wandb.log(
                     {
                         "debug/response_length": len(full_response),
-                        "debug/available_tools": len(agent.tools),
+                        "debug/available_tools": len(tools_list),
                         "debug/tool_calls": tool_call_count,
                         "debug/num_messages": len(agent.messages),
                     }
