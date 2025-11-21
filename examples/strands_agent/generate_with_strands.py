@@ -30,8 +30,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
         params={
             "max_tokens": sampling_params.get("max_new_tokens", 2048),
             "temperature": sampling_params.get("temperature", 1.0),
-            "top_p": sampling_params.get("top_p", 1.0),
-            "stop": sampling_params.get("stop", None),
+            "top_p": sampling_params.get("top_p", 0.7),
         },
     )
 
@@ -60,6 +59,23 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
         openai_messages = agent.model.format_request_messages(
             messages=agent.messages, system_prompt=agent.system_prompt
         )
+        
+        # Debug: print message structure
+        import os
+        if os.environ.get("DEBUG_STRANDS"):
+            print("\n" + "="*80)
+            print("DEBUG: OpenAI Messages Structure")
+            print("="*80)
+            for i, msg in enumerate(openai_messages):
+                print(f"\nMessage {i}: role={msg.get('role')}")
+                if "tool_calls" in msg:
+                    print(f"  Has {len(msg.get('tool_calls', []))} tool calls")
+                if "content" in msg:
+                    content = msg.get("content")
+                    if isinstance(content, str):
+                        print(f"  Content (first 200 chars): {content[:200]}")
+                    else:
+                        print(f"  Content type: {type(content)}")
 
         # Count tool calls from OpenAI-formatted messages (more reliable)
         # In OpenAI format, assistant messages have a "tool_calls" field when tools are used
@@ -129,7 +145,27 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
             loss_masks.extend([1] * (len(response_token_ids) - len(loss_masks)))
 
         # Extract just the response text for logging/storage
+        # Include full conversation with tools for training
         full_response = full_conversation[len(prompt_text) :]
+        
+        # Also extract a human-readable summary (assistant messages only) for debugging
+        if os.environ.get("DEBUG_STRANDS"):
+            assistant_texts = []
+            for msg in openai_messages[len(initial_prompt_messages):]:
+                if msg.get("role") == "assistant" and "content" in msg:
+                    content = msg.get("content", "")
+                    # Handle both string and list[dict] content formats
+                    if isinstance(content, list):
+                        text = content[0].get("text", "") if len(content) > 0 else ""
+                    else:
+                        text = content
+                    if text.strip():
+                        assistant_texts.append(text)
+            print("\n" + "="*80)
+            print("DEBUG: Assistant Text Responses")
+            print("="*80)
+            for i, text in enumerate(assistant_texts):
+                print(f"\nAssistant Response {i+1}:\n{text[:500]}")
 
         # Set sample attributes
         sample.tokens = prompt_tokens_ids + response_token_ids
