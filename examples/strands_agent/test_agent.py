@@ -10,6 +10,16 @@ docker run --gpus all \
     --enable-auto-tool-choice \
     --tool-call-parser hermes \
     --model Qwen/Qwen3-0.6B
+
+To start the SGLang server:
+
+nohup python -m sglang.launch_server \
+    --model-path Qwen/Qwen3-8B \
+    --port 8000 \
+    --host 0.0.0.0 \
+    --tool-call-parser qwen \
+    --tp-size 8 \
+    --mem-fraction-static 0.9 &
 """
 
 import json
@@ -22,7 +32,7 @@ model = OpenAIModel(
         "api_key": "EMPTY",
         "base_url": "http://localhost:8000/v1",
     },
-    model_id="Qwen/Qwen3-0.6B",
+    model_id="Qwen/Qwen3-8B",
     params={
         "max_tokens": 2048,
         "temperature": 1.0,
