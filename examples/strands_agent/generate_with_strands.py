@@ -45,15 +45,18 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
         # Run the agent with the prompt
         agent(sample.prompt)
 
-        # Count tool calls from the agent's message history
-        for message in agent.messages:
-            if message.get("role") == "tool":
-                tool_call_count += 1
-
         # Get OpenAI-formatted messages from the agent
         openai_messages = agent.model.format_request_messages(
             messages=agent.messages, system_prompt=agent.system_prompt
         )
+
+        # Count tool calls from OpenAI-formatted messages (more reliable)
+        # In OpenAI format, assistant messages have a "tool_calls" field when tools are used
+        for message in openai_messages:
+            if message.get("role") == "assistant" and "tool_calls" in message:
+                tool_calls = message.get("tool_calls", [])
+                if tool_calls:  # tool_calls is a list of tool call objects
+                    tool_call_count += len(tool_calls)
 
         # Apply chat template progressively to maintain proper alignment
         # First, get the prompt (system + initial user message)
