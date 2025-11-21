@@ -37,7 +37,17 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
 
     # Create agent with calculator tool
     tools_list = [calculator]
-    agent = Agent(model=model, tools=tools_list)
+    
+    # Custom system prompt to encourage frequent tool usage
+    math_system_prompt = (
+        "You are a helpful math assistant with access to a calculator tool. "
+        "For math problems, USE THE CALCULATOR TOOL FREQUENTLY to verify calculations - "
+        "do not try to solve complex equations mentally. "
+        "Break down the problem into steps and use the calculator for each numerical computation. "
+        "Keep your thinking concise and focus on using tools to solve the problem."
+    )
+    
+    agent = Agent(model=model, tools=tools_list, system_prompt=math_system_prompt)
 
     # Track tool calls
     tool_call_count = 0
