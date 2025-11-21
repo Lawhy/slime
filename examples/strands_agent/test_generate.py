@@ -32,7 +32,7 @@ async def main():
         rollout_temperature=1.0,
         rollout_top_p=1.0,
         rollout_top_k=-1,
-        rollout_max_response_len=2048,
+        rollout_max_response_len=20480, # same as DAPO paper
         rollout_stop=None,
         rollout_stop_token_ids=None,
         rollout_skip_special_tokens=True,
@@ -41,7 +41,7 @@ async def main():
         n_samples_per_prompt=1,
     )
     
-    sampling_params = {"max_new_tokens": 32768, "temperature": 1.0, "top_p": 1.0}
+    sampling_params = {"max_new_tokens": 20480, "temperature": 1.0, "top_p": 1.0}
     
     print("Testing generate function with Qwen3-8B...")
     print(f"Ground Truth: {sample.label}\n")
