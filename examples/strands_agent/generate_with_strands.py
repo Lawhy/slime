@@ -84,6 +84,16 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
                 tool_calls = message.get("tool_calls", [])
                 if tool_calls:  # tool_calls is a list of tool call objects
                     tool_call_count += len(tool_calls)
+        
+        # Convert content from list[dict] format to string format for chat template
+        # The strands library returns content as [{"type": "text", "text": "..."}]
+        # but the tokenizer's chat template expects just the string
+        for message in openai_messages:
+            if "content" in message and isinstance(message["content"], list):
+                if len(message["content"]) > 0 and "text" in message["content"][0]:
+                    message["content"] = message["content"][0]["text"]
+                else:
+                    message["content"] = ""
 
         # Apply chat template progressively to maintain proper alignment
         # First, get the prompt (system + initial user message)
