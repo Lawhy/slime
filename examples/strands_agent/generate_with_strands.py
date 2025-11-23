@@ -13,6 +13,8 @@ from strands import Agent
 from strands.models.openai import OpenAIModel
 from strands_tools import calculator
 
+from code_sandbox import CodeSandbox
+
 
 async def generate(args, sample: Sample, sampling_params) -> Sample:
     """Generate function using strands-agents for tool calling"""
@@ -34,15 +36,23 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
         },
     )
 
-    # Create agent with calculator tool
-    tools_list = [calculator]
+    # Create code sandbox
+    code_sandbox = CodeSandbox(
+        workdir="./tmp/code_sandbox",
+        language="python",
+        execution_timeout=300,
+    )
+    code_sandbox.start_session()
+
+    # Create agent with code sandbox tool
+    tools_list = [code_sandbox.execute_python_code]
     
     # Custom system prompt to encourage frequent tool usage
     math_system_prompt = (
-        "You are a helpful math assistant with access to a calculator tool. "
-        "For math problems, USE THE CALCULATOR TOOL FREQUENTLY to verify calculations - "
+        "You are a helpful math solver assistant with access to a python code execution tool. "
+        "For math problems, USE THE PYTHON CODE EXECUTION TOOL FREQUENTLY to verify calculations - "
         "do not try to solve complex equations mentally. "
-        "Break down the problem into steps and use the calculator for each numerical computation. "
+        "Break down the problem into steps and use the python code execution tool for each numerical computation. "
         "Keep your thinking concise and focus on using tools to solve the problem."
     )
     
@@ -225,6 +235,9 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
         sample.tokens = state.tokenizer(sample.prompt, add_special_tokens=False)["input_ids"]
         sample.loss_mask = []
         sample.tool_call_count = 0
+
+    finally:
+        code_sandbox.close_session()
 
     return sample
 
