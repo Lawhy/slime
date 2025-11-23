@@ -30,7 +30,6 @@ class CodeSandbox:
             A JSON string containing the execution result with:
             - exit_code: Exit code of the execution (0 for success)
             - stderr: Error messages if any
-            - stdout: Standard output from the code
             
         Example:
             code = "import numpy as np\nprint(np.random.rand())"

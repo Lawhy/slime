@@ -11,7 +11,6 @@ except ImportError:
 
 from strands import Agent
 from strands.models.openai import OpenAIModel
-from strands_tools import calculator
 
 from code_sandbox import CodeSandbox
 
