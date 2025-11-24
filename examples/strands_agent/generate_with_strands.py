@@ -61,7 +61,12 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     agent = Agent(model=model, tools=tools_list, system_prompt=SYSTEM_PROMPT)
 
     # Execute the agent with the prompt
-    agent(prompt=sample.prompt)
+    try:
+        agent(prompt=sample.prompt)
+    except Exception as e:
+        pass
+    import ipdb; ipdb.set_trace()
+
 
     # Get OpenAI-formatted messages from the agent
     openai_messages = agent.model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt)
