@@ -66,6 +66,9 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     except Exception as e:
         print(f"Error: {e}")
         pass
+    finally:
+        # Close code sandbox session
+        code_sandbox.close_session()
     import ipdb; ipdb.set_trace()
 
 
@@ -181,9 +184,6 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
                 "debug/num_messages": len(agent.messages),
             }
         )
-
-    # Close code sandbox session
-    code_sandbox.close_session()
 
     return sample
 
