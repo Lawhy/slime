@@ -36,7 +36,7 @@ class CodeSandbox:
             
         Note: The sandbox has a timeout limit and runs in an isolated environment.
         """
-        result = self.session.run(code=code, libraries=libraries, timeout=self.execution_timeout)
+        result = self.session.run(code=code, libraries=libraries)
         return result.to_json()
 
     def start_session(self) -> None:
