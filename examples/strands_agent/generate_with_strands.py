@@ -64,6 +64,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     try:
         agent(prompt=sample.prompt)
     except Exception as e:
+        print(f"Error: {e}")
         pass
     import ipdb; ipdb.set_trace()
 
