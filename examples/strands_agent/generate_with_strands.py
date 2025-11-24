@@ -64,6 +64,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     try:
         agent(prompt=sample.prompt)
     except Exception as e:
+        # To handle max token exception, we just pass
         print(f"Error: {e}")
         pass
     finally:
@@ -75,13 +76,25 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     # Get OpenAI-formatted messages from the agent
     openai_messages = agent.model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt)
 
-    # Track tool call count from output messages
-    tool_call_count = 0
-    for message in openai_messages:
+    # Track tool call count from tool response messages
+    # Each tool call has exactly one corresponding tool response message
+    tool_call_count = sum(1 for message in openai_messages if message.get("role") == "tool")
+    
+    # Debug: let's see what the original method would have counted
+    old_count = 0
+    for i, message in enumerate(openai_messages):
         if message.get("role") == "assistant" and "tool_calls" in message:
             tool_calls = message.get("tool_calls", [])
-            if tool_calls:  # tool_calls is a list of tool call objects
-                tool_call_count += len(tool_calls)
+            if tool_calls:
+                print(f"Message {i}: Found {len(tool_calls)} tool calls")
+                old_count += len(tool_calls)
+            else:
+                print(f"Message {i}: Has 'tool_calls' key but it's empty")
+        elif message.get("role") == "assistant":
+            print(f"Message {i}: Assistant message without 'tool_calls' key")
+    
+    print(f"\nOld counting method would give: {old_count}")
+    print(f"New counting method gives: {tool_call_count}")
 
     # Convert content from list[dict] format to string format for chat template
     # The strands library returns content as [{"type": "text", "text": "..."}]
