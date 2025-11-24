@@ -15,7 +15,7 @@ from slime.ray.rollout_data_source import RolloutDataSourceWithBuffer
 from slime.rollout.base_types import call_rollout_fn
 from slime.utils import tracking_utils
 from slime.utils.health_monitor import RolloutHealthMonitor
-from slime.utils.http_utils import find_available_port, get_host_info, init_http_client
+from slime.utils.http_utils import _wrap_ipv6, find_available_port, get_host_info, init_http_client
 from slime.utils.iter_utils import group_by
 from slime.utils.logging_utils import configure_logger
 from slime.utils.metric_checker import MetricChecker
@@ -233,6 +233,7 @@ class RolloutManager:
             # always instantiate loss_mask if not provided
             if sample.loss_mask is None:
                 sample.loss_mask = [1] * sample.response_length
+
             assert (
                 len(sample.loss_mask) == sample.response_length
             ), f"loss mask length {len(sample.loss_mask)} != response length {sample.response_length}"
@@ -416,7 +417,7 @@ def _start_router(args):
     if args.sglang_router_ip is not None:
         return
 
-    args.sglang_router_ip = get_host_info()[1]
+    args.sglang_router_ip = _wrap_ipv6(get_host_info()[1])
     if args.sglang_router_port is None:
         args.sglang_router_port = find_available_port(random.randint(3000, 4000))
 
@@ -430,18 +431,19 @@ def _start_router(args):
 
         from slime.utils.http_utils import run_router
 
-        router_args = RouterArgs(
-            host=args.sglang_router_ip,
-            port=args.sglang_router_port,
-            balance_abs_threshold=0,
-            prometheus_port=find_available_port(random.randint(4000, 5000)),
-        )
+        router_args = RouterArgs.from_cli_args(args, use_router_prefix=True)
+        router_args.host = args.sglang_router_ip
+        router_args.port = args.sglang_router_port
+        router_args.balance_abs_threshold = 0
+        router_args.prometheus_port = find_available_port(random.randint(4000, 5000))
 
         if hasattr(router_args, "log_level"):
             router_args.log_level = "warn"
 
         if hasattr(router_args, "request_timeout_secs"):
             router_args.request_timeout_secs = args.sglang_router_request_timeout_secs
+
+        logger.info(f"Launch router with args: {router_args}")
 
     process = multiprocessing.Process(
         target=run_router,

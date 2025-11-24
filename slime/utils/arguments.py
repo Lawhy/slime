@@ -5,6 +5,7 @@ import os
 from typing import Any, Dict
 
 import yaml
+from sglang_router.launch_router import RouterArgs
 from transformers import AutoConfig
 
 from slime.backends.sglang_utils.arguments import add_sglang_arguments
@@ -94,12 +95,6 @@ def get_slime_extra_args_provider(add_custom_arguments=None):
                 ),
             )
             parser.add_argument(
-                "--offload-train-mode",
-                choices=["tms", "move"],
-                default="tms",
-                help="Approach to offload training engine",
-            )
-            parser.add_argument(
                 "--offload-rollout",
                 action=argparse.BooleanOptionalAction,
                 help=(
@@ -144,6 +139,12 @@ def get_slime_extra_args_provider(add_custom_arguments=None):
                 action="store_false",
                 dest="enable_weights_backuper",
                 help="Whether to disable weights backuper to save host memory.",
+            )
+            parser.add_argument(
+                "--megatron-to-hf-mode",
+                choices=["raw", "bridge"],
+                default="raw",
+                help="The method to convert megatron weights to hugging face weights for SGLang.",
             )
 
             return parser
@@ -450,7 +451,7 @@ def get_slime_extra_args_provider(add_custom_arguments=None):
                     "Currently we only support jsonl format, and each line should contains --input-key and --label-key, "
                     "which will be used as the prompt and the label respectively. "
                     "If you want to use a custom template, you can set --apply-chat-template to true, in that case, "
-                    "the input should be the same structure as an openai message, e.g. [\{'role': 'user', 'content': 'blabla'\}]. "
+                    "the input should be the same structure as an openai message, e.g. [{'role': 'user', 'content': 'blabla'}]. "
                 ),
             )
             parser.add_argument("--apply-chat-template", action="store_true", default=False)
@@ -815,6 +816,19 @@ def get_slime_extra_args_provider(add_custom_arguments=None):
                 nargs="+",
                 default="",
             )
+            parser.add_argument(
+                "--slime-router-timeout",
+                type=float,
+                default=None,
+                help="Timeout for SlimeRouter HTTP requests in seconds.",
+            )
+            parser.add_argument(
+                "--slime-router-max-connections",
+                type=int,
+                default=None,
+                help="Max connections for SlimeRouter HTTP client.",
+            )
+            RouterArgs.add_cli_args(parser, use_router_prefix=True, exclude_host_port=True)
             return parser
 
         # wandb
@@ -1070,6 +1084,12 @@ def get_slime_extra_args_provider(add_custom_arguments=None):
                 default="qwen",
                 choices=["qwen", "qwen3", "distill_qwen"],
                 help="Loss mask type",
+            )
+            parser.add_argument(
+                "--data-pad-size-multiplier",
+                type=int,
+                default=128,
+                help="Multiplier for data padding size in data processing.",
             )
             return parser
 
