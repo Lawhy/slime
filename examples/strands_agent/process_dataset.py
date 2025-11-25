@@ -20,6 +20,9 @@ def transform_aime(example):
 
 if __name__ == "__main__":
 
+    DATA_DIR = input(f"Enter the path to save processed datasets (default: {DATA_DIR}): ") or DATA_DIR
+    print(f"Saving processed datasets to directory: {DATA_DIR}")
+
     os.makedirs(DATA_DIR, exist_ok=True)
 
     # training dataset is from DAPO-Math-17k
