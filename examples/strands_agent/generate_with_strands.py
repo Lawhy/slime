@@ -1,3 +1,4 @@
+import logging
 import os
 
 from strands import Agent
@@ -12,8 +13,6 @@ from slime.rollout.rm_hub.math_dapo_utils import (
 from slime.rollout.sglang_rollout import GenerateState
 from slime.utils.types import Sample
 
-import logging
-
 logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger(__name__)
@@ -24,13 +23,7 @@ You are a helpful assistant that can use Python tools to solve mathematical prob
 """
 
 
-async def generate(args, sample: Sample, sampling_params) -> Sample:
-    """Generate function using strands-agents as agent scaffolding"""
-    assert not args.partial_rollout, "Partial rollout is not supported for this function at the moment."
-
-    state = GenerateState(args)
-
-    # Create OpenAI-compatible model pointing to SGLang server
+def create_strands_agent(args, sampling_params) -> Agent:
     model = OpenAIModel(
         client_args={
             "api_key": "EMPTY",
@@ -53,49 +46,59 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
         execution_timeout=300,
     )
     code_sandbox.start_session()
+    agent = Agent(model=model, tools=[code_sandbox.execute_python_code], system_prompt=SYSTEM_PROMPT)
+    setattr(agent, "code_sandbox", code_sandbox)
+    return agent
 
-    # Create agent with code sandbox tool
-    tools_list = [code_sandbox.execute_python_code]
-    agent = Agent(model=model, tools=tools_list, system_prompt=SYSTEM_PROMPT)
 
-    # Execute the agent with the prompt
+def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
+    """Run the strands agent with the given prompt and set the sample status."""
     try:
-        agent(prompt=sample.prompt)
+        agent(prompt=prompt)
         # Set status as completed
-        sample.status = Sample.Status.COMPLETED
+        sample_status = Sample.Status.COMPLETED
     except Exception as e:
         if isinstance(e, MaxTokensReachedException):
-            sample.status = Sample.Status.TRUNCATED
+            sample_status = Sample.Status.TRUNCATED
         else:
-            sample.status = Sample.Status.ABORTED
+            sample_status = Sample.Status.ABORTED
         logger.error(f"[Strands Agents] {e}")
     finally:
         # Close code sandbox session
-        code_sandbox.close_session()
-    import ipdb
+        agent.code_sandbox.close_session()
 
-    ipdb.set_trace()
+    return sample_status
 
-    # Get OpenAI-formatted messages from the agent
-    openai_messages = agent.model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt)
 
-    # Track tool call count from tool response messages
-    # Each tool call has exactly one corresponding tool response message
-    tool_call_count = sum(1 for message in openai_messages if message.get("role") == "tool")
-
+def get_trajectory(agent: Agent) -> list[dict]:
+    """Get the chat template-compatible trajectory of the strands agent."""
+    trajectory = agent.model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt)
     # Convert content from list[dict] format to string format for chat template
     # The strands library returns content as [{"type": "text", "text": "..."}]
     # but the tokenizer's chat template expects just the string
-    for message in openai_messages:
+    for message in trajectory:
         if "content" in message and isinstance(message["content"], list):
             if len(message["content"]) > 0 and "text" in message["content"][0]:
                 message["content"] = message["content"][0]["text"]
             else:
                 message["content"] = ""
+    return trajectory
 
-    # Apply chat template progressively to maintain proper alignment
-    # First, get the prompt (system + initial user message)
-    initial_prompt_messages = [msg for msg in openai_messages if msg["role"] in ["system", "user"]][
+
+async def generate(args, sample: Sample, sampling_params) -> Sample:
+    """Generate function using strands-agents as agent scaffolding"""
+    assert not args.partial_rollout, "Partial rollout is not supported for this function at the moment."
+
+    state = GenerateState(args)
+
+    # Create strands agent and run it with the sample prompt
+    agent = create_strands_agent(args, sampling_params)
+    sample.status = run_strands_agent(agent, sample.prompt)
+    trajectory = get_trajectory(agent)
+
+    # Incremental tokenization approach (like retool)
+    # Step 1: Get the initial prompt (system + user message)
+    initial_prompt_messages = [msg for msg in trajectory if msg["role"] in ["system", "user"]][
         :2
     ]  # system + first user
     prompt_text = state.tokenizer.apply_chat_template(
@@ -105,25 +108,17 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     )
     prompt_tokens_ids = state.tokenizer(prompt_text, add_special_tokens=False)["input_ids"]
 
-    # Apply chat template to the full conversation
-    full_conversation = state.tokenizer.apply_chat_template(
-        openai_messages, tokenize=False, add_generation_prompt=False
-    )
-    all_token_ids = state.tokenizer(full_conversation, add_special_tokens=False)["input_ids"]
-
-    # Response tokens are everything after the prompt
-    response_token_ids = all_token_ids[len(prompt_tokens_ids) :]
-
-    # Create loss masks by progressively building up the conversation
-    # to determine token boundaries for each message
+    # Step 2: Build response incrementally, tokenizing each message as we go
+    response_token_ids = []
     loss_masks = []
+    response_text = ""
 
-    # Start with the initial prompt messages
+    # Start with the initial prompt messages for progressive chat template application
     current_messages = list(initial_prompt_messages)
     prev_token_count = len(prompt_tokens_ids)
 
     # Iterate through remaining messages (assistant and tool messages)
-    for message in openai_messages[len(initial_prompt_messages) :]:
+    for message in trajectory[len(initial_prompt_messages) :]:
         # Add this message to the conversation
         current_messages.append(message)
 
@@ -137,6 +132,10 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
         new_token_count = len(current_token_ids)
         message_token_length = new_token_count - prev_token_count
 
+        # Extract the new tokens for this message
+        message_tokens = current_token_ids[prev_token_count:]
+        response_token_ids.extend(message_tokens)
+
         # Mask: 1 for assistant messages (we train on these), 0 for tool results
         if message["role"] == "assistant":
             loss_masks.extend([1] * message_token_length)
@@ -145,39 +144,34 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
 
         prev_token_count = new_token_count
 
-    # Ensure loss_masks matches response_token_ids length
-    if len(loss_masks) > len(response_token_ids):
-        loss_masks = loss_masks[: len(response_token_ids)]
-    elif len(loss_masks) < len(response_token_ids):
-        # Pad with 1s if needed (shouldn't happen but safety check)
-        loss_masks.extend([1] * (len(response_token_ids) - len(loss_masks)))
-
-    # Extract just the response text for logging/storage
-    # This is in chat template format with all tool call tokens - needed for training
-    full_response = full_conversation[len(prompt_text) :]
+    # Extract the response text (everything after the initial prompt)
+    full_conversation_text = state.tokenizer.apply_chat_template(
+        trajectory, tokenize=False, add_generation_prompt=False
+    )
+    response_text = full_conversation_text[len(prompt_text) :]
 
     # Set sample attributes
     sample.tokens = prompt_tokens_ids + response_token_ids
     sample.response_length = len(response_token_ids)
-    sample.response = full_response
+    sample.response = response_text
     sample.loss_mask = loss_masks
 
     # Store information for wandb logging
-    sample.payload_text = sample.prompt + full_response
+    sample.payload_text = sample.prompt + response_text
     sample.payload_has_system = True  # strands uses system prompts
-    sample.payload_has_tools = len(tools_list) > 0
+    sample.payload_has_tools = len(agent.tool_names) > 0
 
     # Store tool call count for reward calculation
-    sample.tool_call_count = tool_call_count
+    sample.tool_call_count = [message["role"] == "tool" for message in trajectory].count(True)
 
     # Log to wandb if available
     if wandb.run is not None:
         wandb.log(
             {
-                "debug/response_length": len(full_response),
-                "debug/available_tools": len(tools_list),
-                "debug/tool_calls": tool_call_count,
-                "debug/num_messages": len(agent.messages),
+                "debug/response_length": len(response_text),
+                "debug/available_tools": len(agent.tool_names),
+                "debug/tool_calls": sample.tool_call_count,
+                "debug/num_messages": len(trajectory),
             }
         )
 
