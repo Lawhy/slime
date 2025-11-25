@@ -5,7 +5,7 @@ from strands.models.openai import OpenAIModel
 from strands.types.exceptions import MaxTokensReachedException
 import wandb
 
-from code_interpreter import CodeInterpreter
+from examples.strands_agent.code_interpreter import CodeInterpreter
 from slime.rollout.rm_hub.math_dapo_utils import (
     compute_score as math_dapo_compute_score,
 )
