@@ -28,7 +28,7 @@ source "/root/slime/scripts/models/qwen3-8B.sh"
 
 # Set model and checkpoint paths (override these via environment variables if needed)
 MODEL_DIR="${MODEL_DIR:-/root/Qwen3-8B}"
-SAVE_DIR="${SAVE_DIR:-/root/Qwen3-8B-math-strands-agent}"
+SAVE_DIR="${SAVE_DIR:-/root/Qwen3-8B-strands-dapo}"
 WANDB_KEY="${WANDB_KEY:-...your wandb key...}"
 
 CKPT_ARGS=(
