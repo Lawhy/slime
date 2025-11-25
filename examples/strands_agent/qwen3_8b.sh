@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# for rerun the task
+for rerun the task
 pkill -9 sglang
 sleep 3
 ray stop --force
@@ -23,12 +23,12 @@ else
 fi
 echo "HAS_NVLINK: $HAS_NVLINK (detected $NVLINK_COUNT NVLink references)"
 
-source "/root/slime/scripts/models/qwen3-8B.sh"
+source "/shared/dev/xth/workspace/lawhy/slime/scripts/models/qwen3-8B.sh"
 
 CKPT_ARGS=(
    --hf-checkpoint /shared/dev/xth/checkpoints/Qwen/Qwen3-8B
    --ref-load /shared/dev/xth/checkpoints/Qwen/Qwen3-8B_torch_dist
-   --save /shared/dev/lawhy/checkpoints/Qwen/Qwen3-8B-strands-dapo
+   --save /shared/dev/xth/checkpoints/Qwen/Qwen3-8B-tool-rl
    --save-interval 20
 )
 
@@ -73,7 +73,7 @@ PERF_ARGS=(
 
    # --micro-batch-size 1
    --use-dynamic-batch-size
-   --max-tokens-per-gpu 20480
+   --max-tokens-per-gpu 16384  # H200 has 141GB, can handle more tokens
 )
 
 GRPO_ARGS=(
@@ -130,7 +130,7 @@ ray start --head --node-ip-address ${MASTER_ADDR} --num-gpus 8 --disable-usage-s
 # Build the runtime environment JSON with proper variable substitution
 RUNTIME_ENV_JSON="{
   \"env_vars\": {
-    \"PYTHONPATH\": \"/root/Megatron-LM/\",
+    \"PYTHONPATH\": \"/root/Megatron-LM/:${SCRIPT_DIR}:/root/slime\",
     \"CUDA_DEVICE_MAX_CONNECTIONS\": \"1\",
     \"NCCL_NVLS_ENABLE\": \"${HAS_NVLINK}\"
   }
