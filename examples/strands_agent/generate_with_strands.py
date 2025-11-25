@@ -46,7 +46,7 @@ def create_strands_agent(args, sampling_params) -> Agent:
         Returns:
             str: The text output from the Code Interpreter tool call.
         """
-        code_interpreter = CodeInterpreter(execution_timeout=300)
+        code_interpreter = CodeInterpreter(require_confirm=False, execution_timeout=300)
         return code_interpreter.run(code=code, code_type="python")
 
     agent = Agent(model=model, tools=[execute_code], system_prompt=SYSTEM_PROMPT)
