@@ -66,8 +66,7 @@ def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
             sample_status = Sample.Status.ABORTED
         logger.error(f"[Strands Agents] {e}")
     finally:
-        # Close code sandbox session
-        agent.code_sandbox.close_session()
+        pass
 
     return sample_status
 
