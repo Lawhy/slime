@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # for rerun the task
-pkill -9 sglang
-sleep 3
-ray stop --force
-pkill -9 ray
-pkill -9 python
-sleep 3
-pkill -9 ray
-pkill -9 python
+# pkill -9 sglang
+# sleep 3
+# ray stop --force
+# pkill -9 ray
+# pkill -9 python
+# sleep 3
+# pkill -9 ray
+# pkill -9 python
 
 set -ex
 
@@ -23,18 +23,17 @@ else
 fi
 echo "HAS_NVLINK: $HAS_NVLINK (detected $NVLINK_COUNT NVLink references)"
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-source "/root/slime/scripts/models/qwen3-8B.sh"
+source "/shared/dev/xth/workspace/lawhy/slime/scripts/models/qwen3-8B.sh"
 
 CKPT_ARGS=(
    --hf-checkpoint /shared/dev/xth/checkpoints/Qwen/Qwen3-8B
-   --ref-load /shared/dev/xth/checkpoints/Qwen/Qwen3-8B_torch_dist
-   --save /shared/dev/lawhy/checkpoints/Qwen3-8B-strands-dapo
+   --ref-load /shared/dev/xth/checkpoints/Qwen/Qwen3-8B-strands-dapo_torch_dist
+   --save /shared/dev/lawhy/checkpoints/Qwen/Qwen3-8B-strands-dapo
    --save-interval 20
 )
 
 ROLLOUT_ARGS=(
-   --prompt-data /root/data/dapo_math_17k.jsonl
+   --prompt-data /shared/dev/xth/data/dapo-math-17k/dapo-math-17k.jsonl
    --input-key prompt
    --label-key label
    --apply-chat-template
@@ -53,7 +52,7 @@ ROLLOUT_ARGS=(
 
 EVAL_ARGS=(
    --eval-interval 20
-   --eval-prompt-data aime  /root/data/aime_2024.jsonl
+   --eval-prompt-data aime  /shared/dev/xth/data/aime-2024/aime-2024.jsonl
    --n-samples-per-eval-prompt 16
    --eval-max-response-len 20480
    --eval-temperature 1.0
