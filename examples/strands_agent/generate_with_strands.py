@@ -97,6 +97,9 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     sample.status = run_strands_agent(agent, sample.prompt)
     trajectory = get_trajectory(agent)
 
+    if sample.status == Sample.Status.ABORTED:
+        return sample
+
     # Incremental tokenization approach (like retool)
     # Step 1: Get the initial prompt (system + user message)
     initial_prompt_messages = [msg for msg in trajectory if msg["role"] in ["system", "user"]][
