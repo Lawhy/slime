@@ -1,7 +1,4 @@
 strands-agents
 strands-agents-tools
-llm-sandbox[docker,k8s,podman]
 datasets
 nvidia-cutlass-dsl==4.2.1
-openai==2.6.1
-camel-ai  # only used for code interpreter; open-ai conflict doesn't matter

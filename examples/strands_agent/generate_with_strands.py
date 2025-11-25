@@ -5,7 +5,7 @@ from strands.models.openai import OpenAIModel
 from strands.types.exceptions import MaxTokensReachedException
 import wandb
 
-from camel.toolkits import CodeExecutionToolkit
+from code_interpreter import CodeInterpreter
 from slime.rollout.rm_hub.math_dapo_utils import (
     compute_score as math_dapo_compute_score,
 )
@@ -46,8 +46,8 @@ def create_strands_agent(args, sampling_params) -> Agent:
         Returns:
             str: The text output from the Code Interpreter tool call.
         """
-        code_execution_toolkit = CodeExecutionToolkit(sandbox="subprocess", timeout=300.0)
-        return code_execution_toolkit.execute_code(code=code, code_type="python")
+        code_interpreter = CodeInterpreter(execution_timeout=300)
+        return code_interpreter.run(code=code, code_type="python")
 
     agent = Agent(model=model, tools=[execute_code], system_prompt=SYSTEM_PROMPT)
     return agent
