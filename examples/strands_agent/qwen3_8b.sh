@@ -47,13 +47,13 @@ ROLLOUT_ARGS=(
    --rollout-shuffle
    --reward-key score
    --num-rollout 3000
-   --rollout-batch-size 32
+   --rollout-batch-size 2  # 32
    --n-samples-per-prompt 8
    --rollout-max-response-len 20480
    --rollout-temperature 1.0
    --rollout-top-p 0.7
 
-   --global-batch-size 256
+   --global-batch-size 16  # 256
    --balance-data
 )
 
@@ -111,7 +111,7 @@ WANDB_ARGS=(
 
 SGLANG_ARGS=(
    --rollout-num-gpus-per-engine 2  # Use TP=2 for inference
-   --sglang-mem-fraction-static 0.6  # Leave more memory for training on H200
+   --sglang-mem-fraction-static 0.4  # Leave more memory for training on H200
 )
 
 MISC_ARGS=(
@@ -148,7 +148,6 @@ ray job submit --address="http://127.0.0.1:8265" \
    -- python3 train.py \
    --actor-num-nodes 1 \
    --actor-num-gpus-per-node 8 \
-   --rollout-num-gpus 6 \
    --colocate \
    ${MODEL_ARGS[@]} \
    ${CKPT_ARGS[@]} \
