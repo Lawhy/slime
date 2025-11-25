@@ -8,9 +8,14 @@ from strands import tool
 
 class CodeSandbox:
     def __init__(self, workdir: str = "code_sandbox", language: str = "python", execution_timeout: int = 300):
-        self.workdir = workdir
-        self.language = language
-        self.execution_timeout = execution_timeout
+        self.session = SandboxDockerSession(
+            workdir=workdir,
+            lang=language,
+            verbose=True,
+            keep_template=True,
+            execution_timeout=execution_timeout,
+        )
+        self.start_session()
 
     @tool
     def execute_python_code(self, code: str, libraries: list[str] = None) -> str:
@@ -31,12 +36,13 @@ class CodeSandbox:
             
         Note: The sandbox has a timeout limit and runs in an isolated environment.
         """
-        with SandboxDockerSession(
-            workdir=self.workdir,
-            lang=self.language,
-            verbose=True,
-            keep_template=True,
-            execution_timeout=self.execution_timeout,
-        ) as session:
-            result = session.run(code=code, libraries=libraries)
-            return result.to_json()
+        result = self.session.run(code=code, libraries=libraries)
+        return result.to_json()
+
+    def start_session(self) -> None:
+        """Start the session."""
+        self.session.__enter__()
+
+    def close_session(self) -> None:
+        """Close the session."""
+        self.session.__exit__(None, None, None)
