@@ -27,7 +27,7 @@ source "/shared/dev/xth/workspace/lawhy/slime/scripts/models/qwen3-8B.sh"
 
 CKPT_ARGS=(
    --hf-checkpoint /shared/dev/xth/checkpoints/Qwen/Qwen3-8B
-   --ref-load /shared/dev/xth/checkpoints/Qwen/Qwen3-8B-strands-dapo_torch_dist
+   --ref-load /shared/dev/xth/checkpoints/Qwen/Qwen3-8B_torch_dist
    --save /shared/dev/lawhy/checkpoints/Qwen/Qwen3-8B-strands-dapo
    --save-interval 20
 )
