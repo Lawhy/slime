@@ -23,17 +23,17 @@ else
 fi
 echo "HAS_NVLINK: $HAS_NVLINK (detected $NVLINK_COUNT NVLink references)"
 
-source "/shared/dev/xth/workspace/lawhy/slime/scripts/models/qwen3-8B.sh"
+source "/root/slime/scripts/models/qwen3-8B.sh"
 
 CKPT_ARGS=(
-   --hf-checkpoint /shared/dev/xth/checkpoints/Qwen/Qwen3-8B
-   --ref-load /shared/dev/xth/checkpoints/Qwen/Qwen3-8B_torch_dist
+   --hf-checkpoint /shared/dev/lawhy/models/Qwen/Qwen3-8B
+   --ref-load /shared/dev/lawhy/checkpoints/Qwen/Qwen3-8B_torch_dist
    --save /shared/dev/lawhy/checkpoints/Qwen/Qwen3-8B-strands-dapo
    --save-interval 20
 )
 
 ROLLOUT_ARGS=(
-   --prompt-data /shared/dev/xth/data/dapo-math-17k/dapo-math-17k.jsonl
+   --prompt-data /shared/dev/lawhy/data/dapo-math-17k.jsonl
    --input-key prompt
    --label-key label
    --apply-chat-template
@@ -52,7 +52,7 @@ ROLLOUT_ARGS=(
 
 EVAL_ARGS=(
    --eval-interval 20
-   --eval-prompt-data aime  /shared/dev/xth/data/aime-2024/aime-2024.jsonl
+   --eval-prompt-data aime  /shared/dev/lawhy/data/aime-2024.jsonl
    --n-samples-per-eval-prompt 16
    --eval-max-response-len 20480
    --eval-temperature 1.0
@@ -73,7 +73,7 @@ PERF_ARGS=(
 
    # --micro-batch-size 1
    --use-dynamic-batch-size
-   --max-tokens-per-gpu 16384  # H200 has 141GB, can handle more tokens
+   --max-tokens-per-gpu 20480
 )
 
 GRPO_ARGS=(
