@@ -26,21 +26,15 @@ echo "HAS_NVLINK: $HAS_NVLINK (detected $NVLINK_COUNT NVLink references)"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 source "/root/slime/scripts/models/qwen3-8B.sh"
 
-# Set model and checkpoint paths (override these via environment variables if needed)
-MODEL_DIR="${MODEL_DIR:-/root/Qwen3-8B}"
-SAVE_DIR="${SAVE_DIR:-${MODEL_DIR}-strands-dapo}"
-DATA_DIR="${DATA_DIR:-/root/data}"
-WANDB_KEY="${WANDB_KEY:-...your wandb key...}"
-
 CKPT_ARGS=(
-   --hf-checkpoint ${MODEL_DIR}
-   --ref-load ${MODEL_DIR}_torch_dist
-   --save ${SAVE_DIR}
+   --hf-checkpoint /root/Qwen3-8B
+   --ref-load /root/Qwen3-8B_torch_dist
+   --save /root/Qwen3-8B-strands-dapo
    --save-interval 20
 )
 
 ROLLOUT_ARGS=(
-   --prompt-data ${DATA_DIR}/dapo_math_17k.jsonl
+   --prompt-data /root/data/dapo_math_17k.jsonl
    --input-key prompt
    --label-key label
    --apply-chat-template
@@ -59,7 +53,7 @@ ROLLOUT_ARGS=(
 
 EVAL_ARGS=(
    --eval-interval 20
-   --eval-prompt-data aime  ${DATA_DIR}/aime_2024.jsonl
+   --eval-prompt-data aime  /root/data/aime_2024.jsonl
    --n-samples-per-eval-prompt 16
    --eval-max-response-len 20480
    --eval-temperature 1.0
@@ -126,8 +120,8 @@ MISC_ARGS=(
 )
 
 CUSTOM_ARGS=(
-   --custom-generate-function-path generate_with_strands.generate
-   --custom-rm-path generate_with_strands.reward_func
+   --custom-generate-function-path examples.strands_agent.generate_with_strands.generate
+   --custom-rm-path examples.strands_agent.generate_with_strands.reward_func
 )
 
 # launch the master node of ray in container
