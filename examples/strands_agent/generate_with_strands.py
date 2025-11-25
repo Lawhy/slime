@@ -2,6 +2,7 @@ import os
 
 from strands import Agent
 from strands.models.openai import OpenAIModel
+from strands.types.exceptions import MaxTokensReachedException
 import wandb
 
 from code_sandbox import CodeSandbox
@@ -10,6 +11,12 @@ from slime.rollout.rm_hub.math_dapo_utils import (
 )
 from slime.rollout.sglang_rollout import GenerateState
 from slime.utils.types import Sample
+
+import logging
+
+logging.basicConfig(level=logging.INFO)
+
+logger = logging.getLogger(__name__)
 
 
 SYSTEM_PROMPT = """
@@ -63,15 +70,20 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     # Execute the agent with the prompt
     try:
         agent(prompt=sample.prompt)
+        # Set status as completed
+        sample.status = Sample.Status.COMPLETED
     except Exception as e:
-        # To handle max token exception, we just pass
-        print(f"Error: {e}")
-        pass
+        if isinstance(e, MaxTokensReachedException):
+            sample.status = Sample.Status.TRUNCATED
+        else:
+            sample.status = Sample.Status.ABORTED
+        logger.error(f"[Strands Agents] {e}")
     finally:
         # Close code sandbox session
         code_sandbox.close_session()
-    import ipdb; ipdb.set_trace()
+    import ipdb
 
+    ipdb.set_trace()
 
     # Get OpenAI-formatted messages from the agent
     openai_messages = agent.model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt)
@@ -79,22 +91,22 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     # Track tool call count from tool response messages
     # Each tool call has exactly one corresponding tool response message
     tool_call_count = sum(1 for message in openai_messages if message.get("role") == "tool")
-    
+
     # Debug: let's see what the original method would have counted
     old_count = 0
     for i, message in enumerate(openai_messages):
         if message.get("role") == "assistant" and "tool_calls" in message:
             tool_calls = message.get("tool_calls", [])
             if tool_calls:
-                print(f"Message {i}: Found {len(tool_calls)} tool calls")
+                logger.info(f"Message {i}: Found {len(tool_calls)} tool calls")
                 old_count += len(tool_calls)
             else:
-                print(f"Message {i}: Has 'tool_calls' key but it's empty")
+                logger.info(f"Message {i}: Has 'tool_calls' key but it's empty")
         elif message.get("role") == "assistant":
-            print(f"Message {i}: Assistant message without 'tool_calls' key")
-    
-    print(f"\nOld counting method would give: {old_count}")
-    print(f"New counting method gives: {tool_call_count}")
+            logger.info(f"Message {i}: Assistant message without 'tool_calls' key")
+
+    logger.info(f"\nOld counting method would give: {old_count}")
+    logger.info(f"New counting method gives: {tool_call_count}")
 
     # Convert content from list[dict] format to string format for chat template
     # The strands library returns content as [{"type": "text", "text": "..."}]
@@ -169,7 +181,6 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     # This is in chat template format with all tool call tokens - needed for training
     full_response = full_conversation[len(prompt_text) :]
 
-
     # Set sample attributes
     sample.tokens = prompt_tokens_ids + response_token_ids
     sample.response_length = len(response_token_ids)
@@ -183,9 +194,6 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
 
     # Store tool call count for reward calculation
     sample.tool_call_count = tool_call_count
-
-    # Set status as completed
-    sample.status = Sample.Status.COMPLETED
 
     # Log to wandb if available
     if wandb.run is not None:
