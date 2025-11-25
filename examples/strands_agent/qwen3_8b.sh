@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for rerun the task
+# for rerun the task
 pkill -9 sglang
 sleep 3
 ray stop --force
