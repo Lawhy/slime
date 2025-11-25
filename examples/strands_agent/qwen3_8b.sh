@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # for rerun the task
-# pkill -9 sglang
-# sleep 3
-# ray stop --force
-# pkill -9 ray
-# pkill -9 python
-# sleep 3
-# pkill -9 ray
-# pkill -9 python
+pkill -9 sglang
+sleep 3
+ray stop --force
+pkill -9 ray
+pkill -9 python
+sleep 3
+pkill -9 ray
+pkill -9 python
 
 set -ex
 
@@ -27,9 +27,9 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 source "/root/slime/scripts/models/qwen3-8B.sh"
 
 CKPT_ARGS=(
-   --hf-checkpoint /root/Qwen3-8B
-   --ref-load /root/Qwen3-8B_torch_dist
-   --save /root/Qwen3-8B-strands-dapo
+   --hf-checkpoint /shared/dev/xth/checkpoints/Qwen/Qwen3-8B
+   --ref-load /shared/dev/xth/checkpoints/Qwen/Qwen3-8B_torch_dist
+   --save /shared/dev/lawhy/checkpoints/Qwen3-8B-strands-dapo
    --save-interval 20
 )
 
