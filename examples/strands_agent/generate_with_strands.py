@@ -1,12 +1,11 @@
 import logging
-import os
 
-from strands import Agent
+from strands import Agent, tool
 from strands.models.openai import OpenAIModel
 from strands.types.exceptions import MaxTokensReachedException
 import wandb
 
-from code_sandbox import CodeSandbox
+from camel.toolkits import CodeExecutionToolkit
 from slime.rollout.rm_hub.math_dapo_utils import (
     compute_score as math_dapo_compute_score,
 )
@@ -19,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 SYSTEM_PROMPT = """
-You are a helpful assistant that can use Python tools to solve mathematical problems. When you need to perform calculations, use the `execute_python_code` tool to execute code and get results.
+You are a helpful assistant that can use Python tools to solve mathematical problems. When you need to perform calculations, use the `execute_code` tool to execute code and get results.
 """
 
 
@@ -37,17 +36,20 @@ def create_strands_agent(args, sampling_params) -> Agent:
         },
     )
 
-    # Create code sandbox and start session
-    sandbox_dir = "/tmp/code_sandbox"
-    os.makedirs(sandbox_dir, exist_ok=True)
-    code_sandbox = CodeSandbox(
-        workdir=sandbox_dir,
-        language="python",
-        execution_timeout=300,
-    )
-    code_sandbox.start_session()
-    agent = Agent(model=model, tools=[code_sandbox.execute_python_code], system_prompt=SYSTEM_PROMPT)
-    setattr(agent, "code_sandbox", code_sandbox)
+    @tool
+    def execute_code(code: str) -> str:
+        r"""Execute a given code snippet.
+
+        Args:
+            code (str): The input code to the Code Interpreter tool call.
+
+        Returns:
+            str: The text output from the Code Interpreter tool call.
+        """
+        code_execution_toolkit = CodeExecutionToolkit(sandbox="subprocess", timeout=300.0)
+        return code_execution_toolkit.execute_code(code=code, code_type="python")
+
+    agent = Agent(model=model, tools=[execute_code], system_prompt=SYSTEM_PROMPT)
     return agent
 
 

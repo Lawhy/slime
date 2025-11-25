@@ -26,19 +26,6 @@ async def main():
         sglang_router_ip="localhost",
         sglang_router_port=8000,
         partial_rollout=False,
-        sglang_server_concurrency=32,
-        rollout_num_gpus=8,
-        rollout_num_gpus_per_engine=8,
-        rollout_temperature=1.0,
-        rollout_top_p=1.0,
-        rollout_top_k=-1,
-        rollout_max_response_len=20480, # same as DAPO paper
-        rollout_stop=None,
-        rollout_stop_token_ids=None,
-        rollout_skip_special_tokens=True,
-        sglang_enable_deterministic_inference=False,
-        rollout_seed=42,
-        n_samples_per_prompt=1,
     )
     
     sampling_params = {"max_new_tokens": 20480, "temperature": 1.0, "top_p": 1.0}
