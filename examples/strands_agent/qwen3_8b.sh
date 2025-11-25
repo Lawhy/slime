@@ -28,7 +28,8 @@ source "/root/slime/scripts/models/qwen3-8B.sh"
 
 # Set model and checkpoint paths (override these via environment variables if needed)
 MODEL_DIR="${MODEL_DIR:-/root/Qwen3-8B}"
-SAVE_DIR="${SAVE_DIR:-/root/Qwen3-8B-strands-dapo}"
+SAVE_DIR="${SAVE_DIR:-${MODEL_DIR}-strands-dapo}"
+DATA_DIR="${DATA_DIR:-/root/data}"
 WANDB_KEY="${WANDB_KEY:-...your wandb key...}"
 
 CKPT_ARGS=(
@@ -37,8 +38,6 @@ CKPT_ARGS=(
    --save ${SAVE_DIR}
    --save-interval 20
 )
-
-DATA_DIR="${DATA_DIR:-/root/data}"
 
 ROLLOUT_ARGS=(
    --prompt-data ${DATA_DIR}/dapo_math_17k.jsonl
