@@ -1,7 +1,17 @@
 """
 Simple test script for generate function with Strands Agent
 
-Usage: python quick_test.py
+# launch the server
+nohup python -m sglang.launch_server \
+    --model-path Qwen/Qwen3-8B \
+    --port 8000 \
+    --host 0.0.0.0 \
+    --tool-call-parser qwen \
+    --tp-size 8 \
+    --mem-fraction-static 0.9 &
+
+# test the generate function
+python test_generate.py
 """
 
 import asyncio
