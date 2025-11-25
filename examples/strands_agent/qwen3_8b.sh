@@ -33,7 +33,7 @@ CKPT_ARGS=(
 )
 
 ROLLOUT_ARGS=(
-   --prompt-data /shared/dev/lawhy/data/dapo-math-17k.jsonl
+   --prompt-data /shared/dev/lawhy/data/dapo_math_17k.jsonl
    --input-key prompt
    --label-key label
    --apply-chat-template
@@ -52,7 +52,7 @@ ROLLOUT_ARGS=(
 
 EVAL_ARGS=(
    --eval-interval 20
-   --eval-prompt-data aime  /shared/dev/lawhy/data/aime-2024.jsonl
+   --eval-prompt-data aime  /shared/dev/lawhy/data/aime_2024.jsonl
    --n-samples-per-eval-prompt 16
    --eval-max-response-len 20480
    --eval-temperature 1.0
