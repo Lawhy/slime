@@ -120,8 +120,8 @@ MISC_ARGS=(
 )
 
 CUSTOM_ARGS=(
-   --custom-generate-function-path examples.strands_agent.generate_with_strands.generate
-   --custom-rm-path examples.strands_agent.generate_with_strands.reward_func
+   --custom-generate-function-path generate_with_strands.generate
+   --custom-rm-path generate_with_strands.reward_func
 )
 
 # launch the master node of ray in container
@@ -139,7 +139,7 @@ RUNTIME_ENV_JSON="{
 
 ray job submit --address="http://127.0.0.1:8265" \
    --runtime-env-json="${RUNTIME_ENV_JSON}" \
-   -- python3 train.py \
+   -- python3 /root/slime/train.py \
    --actor-num-nodes 1 \
    --actor-num-gpus-per-node 8 \
    --colocate \
