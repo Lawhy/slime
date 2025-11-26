@@ -56,6 +56,7 @@ def create_strands_agent(args, sampling_params) -> Agent:
 def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
     """Run the strands agent with the given prompt and set the sample status."""
     try:
+        assert isinstance(prompt, str), "Prompt must be a string"
         agent(prompt=prompt)
         # Set status as completed
         sample_status = Sample.Status.COMPLETED
