@@ -24,7 +24,7 @@ from slime.utils.types import Sample
 
 async def main():
     # Load one sample
-    with open("data/dapo_math_17k.jsonl") as f:
+    with open("/shared/dev/lawhy/data/dapo_math_17k.jsonl") as f:
         data = json.loads(f.readline())
     
     sample = Sample(prompt=data["prompt"], label=data["label"])
