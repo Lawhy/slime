@@ -174,12 +174,8 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     sample.response = response_text
     sample.loss_mask = loss_masks
     
-    # Explicitly set rollout_log_probs to None to ensure consistency.
-    # The rollout code has a bug: it checks only samples[0].rollout_log_probs,
-    # so if any sample has it set (even to []), it includes ALL samples' values,
-    # including None, which causes torch.cat() to fail. By explicitly setting
-    # it to None, we ensure the rollout code won't add it to training data.
-    sample.rollout_log_probs = None
+    # debug
+    sample.rollout_log_probs = [0.0] * sample.response_length
 
     # Store information for wandb logging
     sample.payload_text = prompt_text + response_text
