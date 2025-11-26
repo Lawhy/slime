@@ -132,6 +132,8 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     )
     prompt_tokens_ids = state.tokenizer(prompt_text, add_special_tokens=False)["input_ids"]
 
+    logger.info(f"[Strands Agents] Prompt tokens: {prompt_tokens_ids}")
+
     # Step 2: Build response incrementally, tokenizing each message as we go
     response_token_ids = []
     loss_masks = []
@@ -145,6 +147,8 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     for message in trajectory[len(initial_prompt_messages) :]:
         # Add this message to the conversation
         current_messages.append(message)
+
+        logger.info(f"[Strands Agents] Current messages: {current_messages}")
 
         # Apply chat template and tokenize up to this point
         current_text = state.tokenizer.apply_chat_template(
@@ -198,6 +202,8 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
                 "debug/num_messages": len(trajectory),
             }
         )
+    
+    logger.info(f"[Strands Agents] Sample: {sample}")
 
     return sample
 
