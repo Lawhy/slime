@@ -52,7 +52,7 @@ ROLLOUT_ARGS=(
 # EVAL_ARGS=(
 #    --eval-interval 20
 #    --eval-prompt-data aime  /shared/dev/xth/data/aime-2024/aime-2024.jsonl
-#    --n-samples-per-eval-prompt 16
+#    --n-samples-per-eval-prompt 1
 #    --eval-max-response-len 20480
 #    --eval-temperature 1.0
 #    --eval-top-p 0.7
