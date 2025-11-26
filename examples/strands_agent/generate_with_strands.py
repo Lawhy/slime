@@ -175,7 +175,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     sample.loss_mask = loss_masks
     
     # debug
-    sample.rollout_log_probs = [0.0] * sample.response_length
+    # sample.rollout_log_probs = [0.0] * sample.response_length
 
     # Store information for wandb logging
     sample.payload_text = prompt_text + response_text
@@ -193,6 +193,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
                 "debug/available_tools": len(agent.tool_names),
                 "debug/tool_calls": sample.tool_call_count,
                 "debug/num_messages": len(trajectory),
+                "debug/truncated": sample.status == Sample.Status.TRUNCATED,
             }
         )
 
