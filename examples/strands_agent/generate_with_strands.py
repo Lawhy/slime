@@ -111,14 +111,11 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     prompt_text = sample.prompt if isinstance(sample.prompt, str) else sample.prompt[0]["content"]
     sample.status = run_strands_agent(agent, prompt_text)
     trajectory = get_trajectory(agent)
-    logger.info(f"[Strands Agents] Rollout trajectory: {trajectory}")
     logger.info(f"[Strands Agents] Last message: {trajectory[-1]}")
     logger.info(f"[Strands Agents] Sample status: {sample.status}")
 
     if sample.status == Sample.Status.ABORTED:
         return sample
-
-    logger.info("[Strands Agents] Starting incremental tokenization approach")
 
     # Step 1: Get the initial prompt (system + user message)
     initial_prompt_messages = [msg for msg in trajectory if msg["role"] in ["system", "user"]]
@@ -129,8 +126,6 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
         add_generation_prompt=True,  # Add generation prompt for the assistant
     )
     prompt_tokens_ids = state.tokenizer(prompt_text, add_special_tokens=False)["input_ids"]
-
-    logger.info(f"[Strands Agents] Prompt tokens: {prompt_tokens_ids}")
 
     # Step 2: Build response incrementally, tokenizing each message as we go
     response_token_ids = []
@@ -146,13 +141,14 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
         # Add this message to the conversation
         current_messages.append(message)
 
-        logger.info(f"[Strands Agents] Current messages: {current_messages}")
-
         # Apply chat template and tokenize up to this point
         current_text = state.tokenizer.apply_chat_template(
             current_messages, tokenize=False, add_generation_prompt=False
         )
         current_token_ids = state.tokenizer(current_text, add_special_tokens=False)["input_ids"]
+
+        logger.info(f"[Strands Agents] Current text: {current_text}")
+        logger.info(f"[Strands Agents] Current token ids: {current_token_ids}")
 
         # Calculate how many new tokens this message added
         new_token_count = len(current_token_ids)
@@ -160,7 +156,10 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
 
         # Extract the new tokens for this message
         message_tokens = current_token_ids[prev_token_count:]
+        assert len(message_tokens) == message_token_length, "Message tokens length mismatch"
         response_token_ids.extend(message_tokens)
+
+        logger.info(f"[Strands Agents] Message tokens: {message_tokens}")
 
         # Mask: 1 for assistant messages (we train on these), 0 for tool results
         if message["role"] == "assistant":
