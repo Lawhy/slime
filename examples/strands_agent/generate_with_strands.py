@@ -18,23 +18,35 @@ logger = logging.getLogger(__name__)
 
 
 SYSTEM_PROMPT = """
-You are a helpful assistant that can use Python tools to solve mathematical problems. When you need to perform calculations, use the `execute_code` tool to execute code and get results.
+You are a helpful assistant that can use Python tools to solve mathematical problems. 
+When you need to perform calculations, use the `execute_code` tool to execute code and get results.
+Please put the final answer within \\boxed{}.
 """
 
 
 def create_strands_agent(args, sampling_params) -> Agent:
+    # Log the sampling params being used
+    model_params = {
+        "max_tokens": sampling_params["max_new_tokens"],
+        "temperature": sampling_params["temperature"],
+        "top_p": sampling_params["top_p"],
+    }
+    logger.info(f"[Strands Agents] Creating OpenAIModel with params: {model_params}")
+    
     model = OpenAIModel(
         client_args={
             "api_key": "EMPTY",
             "base_url": f"http://{args.sglang_router_ip}:{args.sglang_router_port}/v1",
         },
         model_id=args.hf_checkpoint.split("/")[-1],
-        params={
-            "max_tokens": sampling_params["max_new_tokens"],
-            "temperature": sampling_params["temperature"],
-            "top_p": sampling_params["top_p"],
-        },
+        params=model_params,
     )
+    
+    # Verify params are stored in the model (if accessible)
+    if hasattr(model, 'params'):
+        logger.info(f"[Strands Agents] Model.params: {model.params}")
+    if hasattr(model, '_params'):
+        logger.info(f"[Strands Agents] Model._params: {model._params}")
 
     @tool
     def execute_code(code: str) -> str:
@@ -100,9 +112,13 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     sample.status = run_strands_agent(agent, prompt_text)
     trajectory = get_trajectory(agent)
     logger.info(f"[Strands Agents] Rollout trajectory: {trajectory}")
+    logger.info(f"[Strands Agents] Last message: {trajectory[-1]}")
+    logger.info(f"[Strands Agents] Sample status: {sample.status}")
 
     if sample.status == Sample.Status.ABORTED:
         return sample
+
+    logger.info("[Strands Agents] Starting incremental tokenization approach")
 
     # Incremental tokenization approach (like retool)
     # Step 1: Get the initial prompt (system + user message)
@@ -213,5 +229,7 @@ async def reward_func(args, sample, **kwargs):
 
     if result["pred"] is None:
         result["pred"] = ""
+
+    logger.info(f"[Strands Agents] Reward result: {result}")
 
     return result

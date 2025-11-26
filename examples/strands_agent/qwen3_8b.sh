@@ -33,7 +33,7 @@ CKPT_ARGS=(
 )
 
 ROLLOUT_ARGS=(
-   --prompt-data /shared/dev/xth/data/dapo-math-17k/dapo-math-17k.jsonl
+   --prompt-data /shared/dev/lawhy/data/gsm8k.jsonl
    --input-key prompt
    --label-key label
    --rollout-shuffle
