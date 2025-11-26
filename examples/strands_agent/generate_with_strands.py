@@ -95,6 +95,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
 
     # Create strands agent and run it with the sample prompt
     agent = create_strands_agent(args, sampling_params)
+    logger.info(f"[Strands Agents] Sample prompt: {sample.prompt}, type: {type(sample.prompt)}")
     prompt_text = sample.prompt if isinstance(sample.prompt, str) else sample.prompt[0]["content"]
     sample.status = run_strands_agent(agent, prompt_text)
     trajectory = get_trajectory(agent)
