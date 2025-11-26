@@ -38,14 +38,14 @@ ROLLOUT_ARGS=(
    --label-key label
    --rollout-shuffle
    --reward-key score
-   --num-rollout 3000
-   --rollout-batch-size 2  # 32
-   --n-samples-per-prompt 2
+   --num-rollout 2
+   --rollout-batch-size 1  # 32
+   --n-samples-per-prompt 1
    --rollout-max-response-len 20480
    --rollout-temperature 1.0
    --rollout-top-p 0.7
 
-   --global-batch-size 4  # 256
+   --global-batch-size 1  # 256
    --balance-data
 )
 
