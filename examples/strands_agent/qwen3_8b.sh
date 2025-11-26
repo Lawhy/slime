@@ -27,7 +27,6 @@ source "/shared/dev/xth/workspace/lawhy/slime/scripts/models/qwen3-8B.sh"
 
 CKPT_ARGS=(
    --hf-checkpoint /shared/dev/xth/checkpoints/Qwen/Qwen3-8B
-   --model-name Qwen/Qwen3-8B
    --ref-load /shared/dev/lawhy/checkpoints/Qwen/Qwen3-8B_torch_dist
    --save /shared/dev/xth/checkpoints/Qwen/Qwen3-8B-tool-rl
    --save-interval 20

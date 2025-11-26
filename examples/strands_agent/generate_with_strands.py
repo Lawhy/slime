@@ -28,7 +28,7 @@ def create_strands_agent(args, sampling_params) -> Agent:
             "api_key": "EMPTY",
             "base_url": f"http://{args.sglang_router_ip}:{args.sglang_router_port}/v1",
         },
-        model_id=args.model_name,
+        model_id=args.hf_checkpoint.split("/")[-1],
         params={
             "max_tokens": sampling_params["max_new_tokens"],
             "temperature": sampling_params["temperature"],
