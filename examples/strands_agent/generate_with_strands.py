@@ -32,7 +32,7 @@ def create_strands_agent(args, sampling_params) -> Agent:
         "top_p": sampling_params["top_p"],
     }
     logger.info(f"[Strands Agents] Creating OpenAIModel with params: {model_params}")
-    
+
     model = OpenAIModel(
         client_args={
             "api_key": "EMPTY",
@@ -41,11 +41,11 @@ def create_strands_agent(args, sampling_params) -> Agent:
         model_id=args.hf_checkpoint.split("/")[-1],
         params=model_params,
     )
-    
+
     # Verify params are stored in the model (if accessible)
-    if hasattr(model, 'params'):
+    if hasattr(model, "params"):
         logger.info(f"[Strands Agents] Model.params: {model.params}")
-    if hasattr(model, '_params'):
+    if hasattr(model, "_params"):
         logger.info(f"[Strands Agents] Model._params: {model._params}")
 
     @tool
@@ -202,8 +202,9 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
                 "debug/num_messages": len(trajectory),
             }
         )
-    
+
     logger.info(f"[Strands Agents] Sample: {sample}")
+    logger.info(f"[Strands Agents] Returning sample with status: {sample.status}, response_length: {sample.response_length}")
 
     return sample
 
