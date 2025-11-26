@@ -54,18 +54,20 @@ async def main():
     sampling_params = {"max_new_tokens": 20480, "temperature": 1.0, "top_p": 1.0}
     
     print("Testing generate function with Qwen3-8B...")
-    print(f"Ground Truth: {sample.label}\n")
     
     # Generate
     result = await generate(args, sample, sampling_params)
     
+    print(f"\nResponse:\n{result.response}\n")
+
+
     print(f"Status: {result.status}")
     print(f"Tool Calls: {getattr(result, 'tool_call_count', 0)}")
-    print(f"\nResponse:\n{result.response}\n")
     
     # Compute reward
     reward = await reward_func(args, result)
     
+    print(f"Ground Truth: {sample.label}\n")
     print(f"Score: {reward['score']}")
     print(f"Predicted: {reward['pred']}")
     print(f"Correct: {'✓' if reward['score'] > 0 else '✗'}")
