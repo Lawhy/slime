@@ -25,29 +25,28 @@ Please put the final answer within \\boxed{}.
 
 
 def create_strands_agent(args, sampling_params) -> Agent:
-    # Log the sampling params being used
+    
+    # Create an OpenAI model from the SGLang server
     model_params = {
         "max_tokens": sampling_params["max_new_tokens"],
         "temperature": sampling_params["temperature"],
         "top_p": sampling_params["top_p"],
     }
-    logger.info(f"[Strands Agents] Creating OpenAIModel with params: {model_params}")
-
+    sglang_server_url = f"http://{args.sglang_router_ip}:{args.sglang_router_port}/v1"
+    logger.info(
+        f"[Strands Agents] Creating OpenAIModel from SGLang server at {sglang_server_url}"
+        f" with parameters: {model_params}"
+    )
     model = OpenAIModel(
         client_args={
             "api_key": "EMPTY",
-            "base_url": f"http://{args.sglang_router_ip}:{args.sglang_router_port}/v1",
+            "base_url": sglang_server_url,
         },
         model_id=args.hf_checkpoint.split("/")[-1],
         params=model_params,
     )
 
-    # Verify params are stored in the model (if accessible)
-    if hasattr(model, "params"):
-        logger.info(f"[Strands Agents] Model.params: {model.params}")
-    if hasattr(model, "_params"):
-        logger.info(f"[Strands Agents] Model._params: {model._params}")
-
+    # Define the execute_code tool
     @tool
     def execute_code(code: str) -> str:
         r"""Execute a given code snippet.
