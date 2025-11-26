@@ -49,14 +49,14 @@ ROLLOUT_ARGS=(
    --balance-data
 )
 
-EVAL_ARGS=(
-   --eval-interval 20
-   --eval-prompt-data aime  /shared/dev/xth/data/aime-2024/aime-2024.jsonl
-   --n-samples-per-eval-prompt 16
-   --eval-max-response-len 20480
-   --eval-temperature 1.0
-   --eval-top-p 0.7
-)
+# EVAL_ARGS=(
+#    --eval-interval 20
+#    --eval-prompt-data aime  /shared/dev/xth/data/aime-2024/aime-2024.jsonl
+#    --n-samples-per-eval-prompt 16
+#    --eval-max-response-len 20480
+#    --eval-temperature 1.0
+#    --eval-top-p 0.7
+# )
 
 PERF_ARGS=(
    --tensor-model-parallel-size 2
