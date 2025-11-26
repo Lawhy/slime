@@ -120,11 +120,9 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
 
     logger.info("[Strands Agents] Starting incremental tokenization approach")
 
-    # Incremental tokenization approach (like retool)
     # Step 1: Get the initial prompt (system + user message)
-    initial_prompt_messages = [msg for msg in trajectory if msg["role"] in ["system", "user"]][
-        :2
-    ]  # system + first user
+    initial_prompt_messages = [msg for msg in trajectory if msg["role"] in ["system", "user"]]
+    assert len(initial_prompt_messages) == 2, "Initial prompt messages must be exactly 2 for single-turn conversations"
     prompt_text = state.tokenizer.apply_chat_template(
         initial_prompt_messages,
         tokenize=False,
