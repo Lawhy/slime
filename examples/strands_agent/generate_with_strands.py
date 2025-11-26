@@ -75,7 +75,21 @@ async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
     try:
         assert isinstance(prompt, str), "Prompt must be a string"
         logger.info(f"[Strands Agents] Running agent with prompt: {prompt}")
-        await agent.invoke_async(prompt=prompt)
+        
+        # Use stream_async directly to ensure we properly consume and close the generator
+        events = agent.stream_async(prompt=prompt)
+        try:
+            async for event in events:
+                # Consume all events to ensure the event loop completes
+                pass
+        finally:
+            # Explicitly close the async generator to ensure cleanup completes
+            await events.aclose()
+        
+        # Yield control to allow any pending async operations (like the finally block) to complete
+        import asyncio
+        await asyncio.sleep(0)
+        
         # Set status as completed
         sample_status = Sample.Status.COMPLETED
     except Exception as e:
@@ -94,7 +108,8 @@ async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
 def get_trajectory(agent: Agent) -> list[dict]:
     """Get the chat template-compatible trajectory of the strands agent."""
     logger.info(f"[Strands Agents] Getting trajectory from {len(agent.messages)} agent messages")
-    trajectory = agent.model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt)
+    openai_model: OpenAIModel = agent.model
+    trajectory = openai_model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt)
     # Convert content from list[dict] format to string format for chat template
     # The strands library returns content as [{"type": "text", "text": "..."}]
     # but the tokenizer's chat template expects just the string
