@@ -1,5 +1,3 @@
 strands-agents
 strands-agents-tools
-datasets
-nvidia-cutlass-dsl==4.2.1
-camel-ai @ git+https://github.com/camel-ai/camel.git@master
+camel-ai
