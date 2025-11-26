@@ -70,12 +70,12 @@ def create_strands_agent(args, sampling_params) -> Agent:
     return agent
 
 
-def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
+async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
     """Run the strands agent with the given prompt and set the sample status."""
     try:
         assert isinstance(prompt, str), "Prompt must be a string"
         logger.info(f"[Strands Agents] Running agent with prompt: {prompt}")
-        agent(prompt=prompt)
+        await agent.invoke_async(prompt=prompt)
         # Set status as completed
         sample_status = Sample.Status.COMPLETED
     except Exception as e:
@@ -85,6 +85,7 @@ def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
             sample_status = Sample.Status.ABORTED
         logger.error(f"[Strands Agents] {e}")
     finally:
+        logger.info(f"[Strands Agents] message length: {len(agent.messages)}")
         pass
 
     return sample_status
@@ -92,6 +93,7 @@ def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
 
 def get_trajectory(agent: Agent) -> list[dict]:
     """Get the chat template-compatible trajectory of the strands agent."""
+    logger.info(f"[Strands Agents] Getting trajectory from {len(agent.messages)} agent messages")
     trajectory = agent.model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt)
     # Convert content from list[dict] format to string format for chat template
     # The strands library returns content as [{"type": "text", "text": "..."}]
@@ -115,10 +117,8 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     agent = create_strands_agent(args, sampling_params)
     prompt_text = sample.prompt if isinstance(sample.prompt, str) else sample.prompt[0]["content"]
     
-    # Run the synchronous Strands agent call in a thread pool to avoid blocking the async event loop
-    # This allows SGLang to batch requests properly across multiple concurrent samples
-    import asyncio
-    sample.status = await asyncio.to_thread(run_strands_agent, agent, prompt_text)
+    # Run the strands agent
+    sample.status = await run_strands_agent(agent, prompt_text)
     trajectory = get_trajectory(agent)
 
     if sample.status == Sample.Status.ABORTED:
