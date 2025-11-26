@@ -119,6 +119,9 @@ def get_trajectory(agent: Agent) -> list[dict]:
                 message["content"] = message["content"][0]["text"]
             else:
                 message["content"] = ""
+
+    logger.info(f"[Strands Agents] length of trajectory: {len(trajectory)}")
+    logger.info(f"[Strands Agents] last message: {trajectory[-1]}")
     return trajectory
 
 
