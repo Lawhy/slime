@@ -185,7 +185,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     sample.loss_mask = loss_masks
 
     # Store information for wandb logging
-    sample.payload_text = sample.prompt + response_text
+    sample.payload_text = prompt_text + response_text
     sample.payload_has_system = True  # strands uses system prompts
     sample.payload_has_tools = len(agent.tool_names) > 0
 
