@@ -139,6 +139,8 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     sample.status = await run_strands_agent(agent, prompt_text)
     trajectory = get_trajectory(agent)
 
+    from ipdb import set_trace; set_trace()
+
     if sample.status == Sample.Status.ABORTED:
         return sample
 
