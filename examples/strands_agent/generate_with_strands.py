@@ -72,6 +72,8 @@ def create_strands_agent(args, sampling_params) -> Agent:
 
 async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
     """Run the strands agent with the given prompt and set the sample status."""
+    import asyncio
+    
     try:
         assert isinstance(prompt, str), "Prompt must be a string"
         logger.info(f"[Strands Agents] Running agent with prompt: {prompt}")
@@ -86,9 +88,20 @@ async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
             # Explicitly close the async generator to ensure cleanup completes
             await events.aclose()
         
-        # Yield control to allow any pending async operations (like the finally block) to complete
-        import asyncio
-        await asyncio.sleep(0)
+        # Yield control multiple times to ensure all pending async operations complete
+        # This is necessary because the generator's finally block may schedule async operations
+        # that need multiple event loop iterations to complete.
+        # The breakpoint works because it pauses execution, giving time for async operations to finish.
+        # We simulate this by yielding control multiple times.
+        for _ in range(10):
+            await asyncio.sleep(0)
+        
+        # Additionally, wait for any pending tasks to complete
+        # This ensures all async operations scheduled by the generator's finally block are done
+        loop = asyncio.get_event_loop()
+        pending_tasks = [t for t in asyncio.all_tasks(loop) if not t.done() and t is not asyncio.current_task()]
+        if pending_tasks:
+            await asyncio.gather(*pending_tasks, return_exceptions=True)
         
         # Set status as completed
         sample_status = Sample.Status.COMPLETED
@@ -139,7 +152,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     sample.status = await run_strands_agent(agent, prompt_text)
     trajectory = get_trajectory(agent)
 
-    from ipdb import set_trace; set_trace()
+    # from ipdb import set_trace; set_trace()
 
     if sample.status == Sample.Status.ABORTED:
         return sample
