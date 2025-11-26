@@ -110,8 +110,6 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     prompt_text = sample.prompt if isinstance(sample.prompt, str) else sample.prompt[0]["content"]
     sample.status = run_strands_agent(agent, prompt_text)
     trajectory = get_trajectory(agent)
-    logger.info(f"[Strands Agents] Last message: {trajectory[-1]}")
-    logger.info(f"[Strands Agents] Sample status: {sample.status}")
 
     if sample.status == Sample.Status.ABORTED:
         return sample
@@ -136,47 +134,39 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     prev_token_count = len(prompt_tokens_ids)
 
     # Iterate through remaining messages (assistant and tool messages)
-    for idx, message in enumerate(trajectory[len(initial_prompt_messages) :]):
+    for message in trajectory[len(initial_prompt_messages) :]:
 
-        try:
-            # Add this message to the conversation
-            current_messages.append(message)
+        # Add this message to the conversation
+        current_messages.append(message)
 
-            # Apply chat template and tokenize up to this point
-            current_text = state.tokenizer.apply_chat_template(
-                current_messages, tokenize=False, add_generation_prompt=False
-            )
-            current_token_ids = state.tokenizer(current_text, add_special_tokens=False)["input_ids"]
+        # Apply chat template and tokenize up to this point
+        current_text = state.tokenizer.apply_chat_template(
+            current_messages, tokenize=False, add_generation_prompt=False
+        )
+        current_token_ids = state.tokenizer(current_text, add_special_tokens=False)["input_ids"]
 
-            # Calculate how many new tokens this message added
-            new_token_count = len(current_token_ids)
-            message_token_length = new_token_count - prev_token_count
+        # Calculate how many new tokens this message added
+        new_token_count = len(current_token_ids)
+        message_token_length = new_token_count - prev_token_count
 
-            # Extract the new tokens for this message
-            message_tokens = current_token_ids[prev_token_count:]
-            assert len(message_tokens) == message_token_length, "Message tokens length mismatch"
-            response_token_ids.extend(message_tokens)
+        # Extract the new tokens for this message
+        message_tokens = current_token_ids[prev_token_count:]
+        assert len(message_tokens) == message_token_length, "Message tokens length mismatch"
+        response_token_ids.extend(message_tokens)
 
-            # Mask: 1 for assistant messages (we train on these), 0 for tool results
-            if message["role"] == "assistant":
-                loss_masks.extend([1] * message_token_length)
-            else:  # tool messages
-                loss_masks.extend([0] * message_token_length)
+        # Mask: 1 for assistant messages (we train on these), 0 for tool results
+        if message["role"] == "assistant":
+            loss_masks.extend([1] * message_token_length)
+        else:  # tool messages
+            loss_masks.extend([0] * message_token_length)
 
-            prev_token_count = new_token_count
-        except Exception as e:
-            logger.error(f"[Strands Agents] Error processing message {idx}: {e}")
-            raise e
+        prev_token_count = new_token_count
 
     # Extract the response text (everything after the initial prompt)
-    try:
-        full_conversation_text = state.tokenizer.apply_chat_template(
-                trajectory, tokenize=False, add_generation_prompt=False
-            )
-        response_text = full_conversation_text[len(prompt_text) :]
-    except Exception as e:
-        logger.error(f"[Strands Agents] Error extracting response text: {e}")
-        raise e
+    full_conversation_text = state.tokenizer.apply_chat_template(
+            trajectory, tokenize=False, add_generation_prompt=False
+        )
+    response_text = full_conversation_text[len(prompt_text) :]
 
     # Set sample attributes
     sample.tokens = prompt_tokens_ids + response_token_ids
@@ -203,8 +193,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
             }
         )
 
-    logger.info(f"[Strands Agents] Sample: {sample}")
-    logger.info(f"[Strands Agents] Returning sample with status: {sample.status}, response_length: {sample.response_length}")
+    logger.info(f"[Strands Agents] Returning sample with status: {sample.status}, tool_call_count: {sample.tool_call_count}, response_length: {sample.response_length}")
 
     return sample
 
