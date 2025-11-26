@@ -9,9 +9,10 @@ This is a running example that connects the [Strands-Agents](https://github.com/
 3. Install Slime: `pip install -e .`
 4. Goes to the example folder: `cd /root/slime/examples/strands_agent`
 5. Install other dependencies: `pip install -r requirements.txt`
-6. Set up docker daemon in the docker (for code-sandbox): `bash install_docker.sh`
 
-## Prepare Qwen3-8B Model
+> NOTE: we use camel-ai's subprocess code interpreter for python code execution, which is NOT a good practice; it's just for convenience of this example and the dependencies for solving math problems are usually ready in `slime`'s docker
+
+## Prepare Model
 
 ```bash
 # hf checkpoint
@@ -28,6 +29,18 @@ PYTHONPATH=/root/Megatron-LM python tools/convert_hf_to_torch_dist.py \
 
 ## Prepare Dataset
 
-We follow the same training-eval setup as in `examples/retool` using `dapo_math_17k` as training data and `aime_2024` as eval data.
+We used `dapo-math-17k` as training data:
 
-Run `process_dataset.py` such that 
+```
+from datasets import load_dataset
+ds = load_dataset("zhuzilin/dapo-math-17k", split="train")
+ds.to_json("/root/data/dapo-math-17k.jsonl", orient="records", lines=True)
+```
+
+and `aime-2024` as eval data:
+
+```
+from datasets import load_dataset
+ds = load_dataset("zhuzilin/aime-2024", split="train")
+ds.to_json("/root/data/aime-2024.jsonl", orient="records", lines=True)
+```

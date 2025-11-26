@@ -23,35 +23,35 @@ else
 fi
 echo "HAS_NVLINK: $HAS_NVLINK (detected $NVLINK_COUNT NVLink references)"
 
-source "/shared/dev/xth/workspace/lawhy/slime/scripts/models/qwen3-8B.sh"
+source "/shared/dev/lawhy/slime/scripts/models/qwen3-8B.sh"
 
 CKPT_ARGS=(
-   --hf-checkpoint /shared/dev/xth/checkpoints/Qwen/Qwen3-8B
-   --ref-load /shared/dev/lawhy/checkpoints/Qwen/Qwen3-8B_torch_dist
-   --save /shared/dev/xth/checkpoints/Qwen/Qwen3-8B-tool-rl
+   --hf-checkpoint /shared/dev/lawhy/models/qwen3-8B
+   --ref-load /shared/dev/lawhy/models/qwen3-8B_torch_dist
+   --save /shared/dev/lawhy/models/qwen3-8B_strands_dapo
    --save-interval 20
 )
 
 ROLLOUT_ARGS=(
-   --prompt-data /shared/dev/lawhy/data/gsm8k.jsonl
+   --prompt-data /shared/dev/lawhy/data/dapo-math-17k.jsonl
    --input-key prompt
    --label-key label
    --rollout-shuffle
    --reward-key score
-   --num-rollout 32
-   --rollout-batch-size 4  # 32
-   --n-samples-per-prompt 4
+   --num-rollout 3000
+   --rollout-batch-size 32
+   --n-samples-per-prompt 8
    --rollout-max-response-len 20480
    --rollout-temperature 1.0
    --rollout-top-p 0.7
 
-   --global-batch-size 16  # 256
+   --global-batch-size 256
    --balance-data
 )
 
 # EVAL_ARGS=(
 #    --eval-interval 20
-#    --eval-prompt-data aime  /shared/dev/xth/data/aime-2024/aime-2024.jsonl
+#    --eval-prompt-data aime  /shared/dev/lawhy/data/aime-2024.jsonl
 #    --n-samples-per-eval-prompt 1
 #    --eval-max-response-len 20480
 #    --eval-temperature 1.0

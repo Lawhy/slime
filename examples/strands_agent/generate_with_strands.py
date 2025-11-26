@@ -5,7 +5,7 @@ from strands.models.openai import OpenAIModel
 from strands.types.exceptions import MaxTokensReachedException
 import wandb
 
-from examples.strands_agent.code_interpreter import CodeInterpreter
+from camel.toolkits.code_execution import CodeExecutionToolkit
 from slime.rollout.rm_hub.math_dapo_utils import (
     compute_score as math_dapo_compute_score,
 )
@@ -18,10 +18,13 @@ logger = logging.getLogger(__name__)
 
 
 SYSTEM_PROMPT = """
-You are a helpful assistant that can use Python tools to solve mathematical problems. 
-When you need to perform calculations, use the `execute_code` tool to execute code and get results.
-Please put the final answer within \\boxed{}.
-"""
+You are a helpful math-solving assistant with access to the `execute_python_code` tool.
+
+Guidelines:
+- For any numerical or symbolic computation, always use the `execute_python_code` tool rather than performing calculations mentally.
+- Break problems into clear steps, calling the Python tool whenever computation is required.
+- After completing your reasoning, present the final result enclosed in \\boxed{}.
+""".strip()
 
 
 def create_strands_agent(args, sampling_params) -> Agent:
@@ -48,19 +51,22 @@ def create_strands_agent(args, sampling_params) -> Agent:
 
     # Define the execute_code tool
     @tool
-    def execute_code(code: str) -> str:
-        r"""Execute a given code snippet.
+    def execute_python_code(code: str) -> str:
+        r"""Execute a given Python code snippet.
 
         Args:
-            code (str): The input code to the Code Interpreter tool call.
+            code (str): The input Python code to the Code Execution tool call.
 
         Returns:
-            str: The text output from the Code Interpreter tool call.
+            str: The text output from the Code Execution tool call.
         """
-        code_interpreter = CodeInterpreter(require_confirm=False, execution_timeout=300)
-        return code_interpreter.run(code=code, code_type="python")
+        code_execution_toolkit = CodeExecutionToolkit(
+            sandbox="subprocess",
+            timeout=300,
+        )
+        return code_execution_toolkit.execute_code(code=code, code_type="python")
 
-    agent = Agent(model=model, tools=[execute_code], system_prompt=SYSTEM_PROMPT, callback_handler=None)
+    agent = Agent(model=model, tools=[execute_python_code], system_prompt=SYSTEM_PROMPT, callback_handler=None)
     return agent
 
 
