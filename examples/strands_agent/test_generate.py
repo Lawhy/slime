@@ -65,12 +65,13 @@ async def main():
     print(f"Tool Calls: {getattr(result, 'tool_call_count', 0)}")
     
     # Compute reward
-    reward = await reward_func(args, result)
-    
-    print(f"Ground Truth: {sample.label}\n")
-    print(f"Score: {reward['score']}")
-    print(f"Predicted: {reward['pred']}")
-    print(f"Correct: {'✓' if reward['score'] > 0 else '✗'}")
+    if not result.status == Sample.Status.ABORTED:
+        reward = await reward_func(args, result)
+        
+        print(f"Ground Truth: {sample.label}\n")
+        print(f"Score: {reward['score']}")
+        print(f"Predicted: {reward['pred']}")
+        print(f"Correct: {'✓' if reward['score'] > 0 else '✗'}")
 
 
 if __name__ == "__main__":
