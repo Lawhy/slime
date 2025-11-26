@@ -36,7 +36,6 @@ ROLLOUT_ARGS=(
    --prompt-data /shared/dev/xth/data/dapo-math-17k/dapo-math-17k.jsonl
    --input-key prompt
    --label-key label
-   --apply-chat-template
    --rollout-shuffle
    --reward-key score
    --num-rollout 3000
