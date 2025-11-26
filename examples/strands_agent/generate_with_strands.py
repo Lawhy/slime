@@ -108,7 +108,11 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     # Create strands agent and run it with the sample prompt
     agent = create_strands_agent(args, sampling_params)
     prompt_text = sample.prompt if isinstance(sample.prompt, str) else sample.prompt[0]["content"]
-    sample.status = run_strands_agent(agent, prompt_text)
+    
+    # Run the synchronous Strands agent call in a thread pool to avoid blocking the async event loop
+    # This allows SGLang to batch requests properly across multiple concurrent samples
+    import asyncio
+    sample.status = await asyncio.to_thread(run_strands_agent, agent, prompt_text)
     trajectory = get_trajectory(agent)
 
     if sample.status == Sample.Status.ABORTED:
