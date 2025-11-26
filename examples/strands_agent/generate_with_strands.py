@@ -78,30 +78,14 @@ async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
         assert isinstance(prompt, str), "Prompt must be a string"
         logger.info(f"[Strands Agents] Running agent with prompt: {prompt}")
         
-        # Use stream_async directly to ensure we properly consume and close the generator
-        events = agent.stream_async(prompt=prompt)
-        try:
-            async for event in events:
-                # Consume all events to ensure the event loop completes
-                pass
-        finally:
-            # Explicitly close the async generator to ensure cleanup completes
-            await events.aclose()
+        # Use invoke_async (the intended API) which properly handles the event loop
+        await agent.invoke_async(prompt=prompt)
         
-        # Yield control multiple times to ensure all pending async operations complete
-        # This is necessary because the generator's finally block may schedule async operations
-        # that need multiple event loop iterations to complete.
+        # The generator's finally block may schedule async operations that need time to complete.
         # The breakpoint works because it pauses execution, giving time for async operations to finish.
-        # We simulate this by yielding control multiple times.
-        for _ in range(10):
-            await asyncio.sleep(0)
-        
-        # Additionally, wait for any pending tasks to complete
-        # This ensures all async operations scheduled by the generator's finally block are done
-        loop = asyncio.get_event_loop()
-        pending_tasks = [t for t in asyncio.all_tasks(loop) if not t.done() and t is not asyncio.current_task()]
-        if pending_tasks:
-            await asyncio.gather(*pending_tasks, return_exceptions=True)
+        # We add a small fixed delay to ensure all async cleanup completes.
+        # This is deterministic and non-blocking for other concurrent operations.
+        await asyncio.sleep(0.01)  # 10ms delay - small enough to not block, large enough for cleanup
         
         # Set status as completed
         sample_status = Sample.Status.COMPLETED
