@@ -49,7 +49,7 @@ def create_strands_agent(args, sampling_params) -> Agent:
         code_interpreter = CodeInterpreter(require_confirm=False, execution_timeout=300)
         return code_interpreter.run(code=code, code_type="python")
 
-    agent = Agent(model=model, tools=[execute_code], system_prompt=SYSTEM_PROMPT)
+    agent = Agent(model=model, tools=[execute_code], system_prompt=SYSTEM_PROMPT, callback_handler=None)
     return agent
 
 
@@ -96,10 +96,10 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
 
     # Create strands agent and run it with the sample prompt
     agent = create_strands_agent(args, sampling_params)
-    logger.info(f"[Strands Agents] Sample prompt: {sample.prompt}, type: {type(sample.prompt)}")
     prompt_text = sample.prompt if isinstance(sample.prompt, str) else sample.prompt[0]["content"]
     sample.status = run_strands_agent(agent, prompt_text)
     trajectory = get_trajectory(agent)
+    logger.info(f"[Strands Agents] Rollout trajectory: {trajectory}")
 
     if sample.status == Sample.Status.ABORTED:
         return sample

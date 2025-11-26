@@ -40,12 +40,12 @@ ROLLOUT_ARGS=(
    --reward-key score
    --num-rollout 3000
    --rollout-batch-size 2  # 32
-   --n-samples-per-prompt 8
+   --n-samples-per-prompt 2
    --rollout-max-response-len 20480
    --rollout-temperature 1.0
    --rollout-top-p 0.7
 
-   --global-batch-size 16  # 256
+   --global-batch-size 4  # 256
    --balance-data
 )
 
