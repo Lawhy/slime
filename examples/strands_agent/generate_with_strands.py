@@ -1,11 +1,13 @@
 import logging
 
+from camel.toolkits.code_execution import CodeExecutionToolkit
 from strands import Agent, tool
+from strands.hooks import HookProvider, HookRegistry
+from strands.hooks.events import AfterInvocationEvent
 from strands.models.openai import OpenAIModel
 from strands.types.exceptions import MaxTokensReachedException
 import wandb
 
-from camel.toolkits.code_execution import CodeExecutionToolkit
 from slime.rollout.rm_hub.math_dapo_utils import (
     compute_score as math_dapo_compute_score,
 )
@@ -27,8 +29,43 @@ Guidelines:
 """.strip()
 
 
-def create_strands_agent(args, sampling_params) -> Agent:
-    
+class TrajectoryHook(HookProvider):
+    """Hook provider that gets the trajectory of the strands agent.
+
+    This hook is to solve the issue that `agent.messages` may not be ready after `await agent.invoke_async(prompt=prompt)`.
+    """
+
+    def __init__(self) -> None:
+        self.trajectory: list[dict] | None = None
+
+    def register_hooks(self, registry: HookRegistry) -> None:
+        registry.add_callback(AfterInvocationEvent, self.on_complete)
+
+    def on_complete(self, event: AfterInvocationEvent) -> None:
+        agent = event.agent
+        self.trajectory = self.get_trajectory(agent)
+
+    @staticmethod
+    def get_trajectory(agent: Agent) -> list[dict]:
+        """Get the chat template-compatible trajectory of the strands agent."""
+        logger.info(f"[Strands Agents] Getting trajectory from {len(agent.messages)} agent messages")
+        openai_model: OpenAIModel = agent.model
+        trajectory = openai_model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt)
+        # Convert content from list[dict] format to string format for chat template
+        # The strands library returns content as [{"type": "text", "text": "..."}]
+        # but the tokenizer's chat template expects just the string
+        for message in trajectory:
+            if "content" in message and isinstance(message["content"], list):
+                if len(message["content"]) > 0 and "text" in message["content"][0]:
+                    message["content"] = message["content"][0]["text"]
+                else:
+                    message["content"] = ""
+
+        logger.info(f"[Strands Agents] trajectory length: {len(trajectory)}; last message: {trajectory[-1]}")
+        return trajectory
+
+
+def create_strands_agent(args, sampling_params):
     # Create an OpenAI model from the SGLang server
     model_params = {
         "max_tokens": sampling_params["max_new_tokens"],
@@ -66,28 +103,24 @@ def create_strands_agent(args, sampling_params) -> Agent:
         )
         return code_execution_toolkit.execute_code(code=code, code_type="python")
 
-    agent = Agent(model=model, tools=[execute_python_code], system_prompt=SYSTEM_PROMPT)
-    return agent
+    # Create a completion event to track when invocation finishes
+    trajectory_hook = TrajectoryHook()
+
+    agent = Agent(
+        model=model,
+        tools=[execute_python_code],
+        system_prompt=SYSTEM_PROMPT,
+        hooks=[trajectory_hook],
+        callback_handler=None,
+    )
+    return agent, trajectory_hook
 
 
 async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
     """Run the strands agent with the given prompt and set the sample status."""
-    import asyncio
-    
     try:
-        assert isinstance(prompt, str), "Prompt must be a string"
         logger.info(f"[Strands Agents] Running agent with prompt: {prompt}")
-        
-        # Use invoke_async (the intended API) which properly handles the event loop
         await agent.invoke_async(prompt=prompt)
-        
-        # # The generator's finally block may schedule async operations that need time to complete.
-        # # The breakpoint works because it pauses execution, giving time for async operations to finish.
-        # # We add a small fixed delay to ensure all async cleanup completes.
-        # # This is deterministic and non-blocking for other concurrent operations.
-        # await asyncio.sleep(0.01)  # 10ms delay - small enough to not block, large enough for cleanup
-        
-        # Set status as completed
         sample_status = Sample.Status.COMPLETED
     except Exception as e:
         if isinstance(e, MaxTokensReachedException):
@@ -102,26 +135,6 @@ async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
     return sample_status
 
 
-def get_trajectory(agent: Agent) -> list[dict]:
-    """Get the chat template-compatible trajectory of the strands agent."""
-    logger.info(f"[Strands Agents] Getting trajectory from {len(agent.messages)} agent messages")
-    openai_model: OpenAIModel = agent.model
-    trajectory = openai_model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt)
-    # Convert content from list[dict] format to string format for chat template
-    # The strands library returns content as [{"type": "text", "text": "..."}]
-    # but the tokenizer's chat template expects just the string
-    for message in trajectory:
-        if "content" in message and isinstance(message["content"], list):
-            if len(message["content"]) > 0 and "text" in message["content"][0]:
-                message["content"] = message["content"][0]["text"]
-            else:
-                message["content"] = ""
-
-    logger.info(f"[Strands Agents] length of trajectory: {len(trajectory)}")
-    logger.info(f"[Strands Agents] last message: {trajectory[-1]}")
-    return trajectory
-
-
 async def generate(args, sample: Sample, sampling_params) -> Sample:
     """Generate function using strands-agents as agent scaffolding"""
     assert not args.partial_rollout, "Partial rollout is not supported for this function at the moment."
@@ -129,12 +142,12 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     state = GenerateState(args)
 
     # Create strands agent and run it with the sample prompt
-    agent = create_strands_agent(args, sampling_params)
+    agent, trajectory_hook = create_strands_agent(args, sampling_params)
     prompt_text = sample.prompt if isinstance(sample.prompt, str) else sample.prompt[0]["content"]
-    
+
     # Run the strands agent
     sample.status = await run_strands_agent(agent, prompt_text)
-    trajectory = get_trajectory(agent)
+    trajectory = trajectory_hook.trajectory
 
     # from ipdb import set_trace; set_trace()
 
@@ -162,7 +175,6 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
 
     # Iterate through remaining messages (assistant and tool messages)
     for message in trajectory[len(initial_prompt_messages) :]:
-
         # Add this message to the conversation
         current_messages.append(message)
 
@@ -191,8 +203,8 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
 
     # Extract the response text (everything after the initial prompt)
     full_conversation_text = state.tokenizer.apply_chat_template(
-            trajectory, tokenize=False, add_generation_prompt=False
-        )
+        trajectory, tokenize=False, add_generation_prompt=False
+    )
     response_text = full_conversation_text[len(prompt_text) :]
 
     # Set sample attributes
@@ -200,7 +212,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     sample.response_length = len(response_token_ids)
     sample.response = response_text
     sample.loss_mask = loss_masks
-    
+
     # debug
     # sample.rollout_log_probs = [0.0] * sample.response_length
 
@@ -224,7 +236,9 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
             }
         )
 
-    logger.info(f"[Strands Agents] Returning sample with status: {sample.status}, tool_call_count: {sample.tool_call_count}, response_length: {sample.response_length}")
+    logger.info(
+        f"[Strands Agents] Returning sample with status: {sample.status}, tool_call_count: {sample.tool_call_count}, response_length: {sample.response_length}"
+    )
 
     return sample
 
