@@ -89,7 +89,7 @@ def create_strands_agent(args, sampling_params):
 async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
     """Run the strands agent with the given prompt and set the sample status."""
     try:
-        logger.info(f"[Strands Agents] Running agent with prompt: {prompt}")
+        logger.info(f"[Strands Agents] running agent with prompt: {prompt}")
         await agent.invoke_async(prompt=prompt)
         sample_status = Sample.Status.COMPLETED
     except Exception as e:
@@ -234,10 +234,6 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
             }
         )
 
-    logger.info(
-        f"[Strands Agents] Returning sample with status: {sample.status}, tool_call_count: {sample.tool_call_count}, response_length: {sample.response_length}"
-    )
-
     return sample
 
 
@@ -269,6 +265,13 @@ async def reward_func(args, sample, **kwargs):
     if result["pred"] is None:
         result["pred"] = ""
 
-    logger.info(f"[Strands Agents] Reward result: {result}")
+    logger.info(
+        "[Strands Agents] sample summary: ",
+        f"status={sample.status} |",
+        f"tool_call_count={sample.tool_call_count} | ",
+        f"response_length={sample.response_length} | ",
+        f"reward={result} | ",
+        f"ground_truth={ground_truth} | ",
+    )
 
     return result
