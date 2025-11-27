@@ -6,6 +6,7 @@ from strands import Agent, tool
 from strands.models.openai import OpenAIModel
 from strands.types.exceptions import (
     ContextWindowOverflowException,
+    EventLoopException,
     MaxTokensReachedException,
 )
 import wandb
@@ -92,11 +93,15 @@ async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
         await agent.invoke_async(prompt=prompt)
         sample_status = Sample.Status.COMPLETED
     except Exception as e:
-        if isinstance(e, MaxTokensReachedException):
-            sample_status = Sample.Status.TRUNCATED
-        elif isinstance(e, ContextWindowOverflowException):
-            sample_status = Sample.Status.TRUNCATED
-        elif isinstance(e, openai.APIError) and str(e).startswith("Requested token count exceeds"):
+        truncated_conditions = [
+            isinstance(e, MaxTokensReachedException),
+            isinstance(e, ContextWindowOverflowException),
+            isinstance(e, EventLoopException)
+            and isinstance(e.original_exception, openai.APIError)
+            and "context length" in str(e.original_exception).lower(),
+        ]
+
+        if any(truncated_conditions):
             sample_status = Sample.Status.TRUNCATED
         else:
             sample_status = Sample.Status.ABORTED
