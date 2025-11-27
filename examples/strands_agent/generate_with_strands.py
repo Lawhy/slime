@@ -1,11 +1,13 @@
 import logging
 
 from camel.toolkits.code_execution import CodeExecutionToolkit
+import openai
 from strands import Agent, tool
-from strands.hooks import HookProvider, HookRegistry
-from strands.hooks.events import AfterInvocationEvent
 from strands.models.openai import OpenAIModel
-from strands.types.exceptions import MaxTokensReachedException
+from strands.types.exceptions import (
+    ContextWindowOverflowException,
+    MaxTokensReachedException,
+)
 import wandb
 
 from slime.rollout.rm_hub.math_dapo_utils import (
@@ -27,42 +29,6 @@ Guidelines:
 - Break problems into clear steps, calling the Python tool whenever computation is required.
 - After completing your reasoning, present the final result enclosed in \\boxed{}.
 """.strip()
-
-
-class TrajectoryHook(HookProvider):
-    """Hook provider that gets the trajectory of the strands agent.
-
-    This hook is to solve the issue that `agent.messages` may not be ready after `await agent.invoke_async(prompt=prompt)`.
-    """
-
-    def __init__(self) -> None:
-        self.trajectory: list[dict] | None = None
-
-    def register_hooks(self, registry: HookRegistry) -> None:
-        registry.add_callback(AfterInvocationEvent, self.on_complete)
-
-    def on_complete(self, event: AfterInvocationEvent) -> None:
-        agent = event.agent
-        self.trajectory = self.get_trajectory(agent)
-
-    @staticmethod
-    def get_trajectory(agent: Agent) -> list[dict]:
-        """Get the chat template-compatible trajectory of the strands agent."""
-        logger.info(f"[Strands Agents] Getting trajectory from {len(agent.messages)} agent messages")
-        openai_model: OpenAIModel = agent.model
-        trajectory = openai_model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt)
-        # Convert content from list[dict] format to string format for chat template
-        # The strands library returns content as [{"type": "text", "text": "..."}]
-        # but the tokenizer's chat template expects just the string
-        for message in trajectory:
-            if "content" in message and isinstance(message["content"], list):
-                if len(message["content"]) > 0 and "text" in message["content"][0]:
-                    message["content"] = message["content"][0]["text"]
-                else:
-                    message["content"] = ""
-
-        logger.info(f"[Strands Agents] trajectory length: {len(trajectory)}; last message: {trajectory[-1]}")
-        return trajectory
 
 
 def create_strands_agent(args, sampling_params):
@@ -116,7 +82,7 @@ def create_strands_agent(args, sampling_params):
         # hooks=[trajectory_hook],
         callback_handler=None,
     )
-    return agent # , trajectory_hook
+    return agent  # , trajectory_hook
 
 
 async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
@@ -128,14 +94,37 @@ async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
     except Exception as e:
         if isinstance(e, MaxTokensReachedException):
             sample_status = Sample.Status.TRUNCATED
+        elif isinstance(e, ContextWindowOverflowException):
+            sample_status = Sample.Status.TRUNCATED
+        elif isinstance(e, openai.APIError) and str(e).startswith("Requested token count exceeds"):
+            sample_status = Sample.Status.TRUNCATED
         else:
             sample_status = Sample.Status.ABORTED
-        logger.error(f"[Strands Agents] {e}")
+        logger.error(f"[Strands Agents] inference not completed due to exception: {e}")
     finally:
         logger.info(f"[Strands Agents] message length: {len(agent.messages)}")
         pass
 
     return sample_status
+
+
+def get_trajectory(agent: Agent) -> list[dict]:
+    """Get the chat template-compatible trajectory of the strands agent."""
+    logger.info(f"[Strands Agents] Getting trajectory from {len(agent.messages)} agent messages")
+    openai_model: OpenAIModel = agent.model
+    trajectory = openai_model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt)
+    # Convert content from list[dict] format to string format for chat template
+    # The strands library returns content as [{"type": "text", "text": "..."}]
+    # but the tokenizer's chat template expects just the string
+    for message in trajectory:
+        if "content" in message and isinstance(message["content"], list):
+            if len(message["content"]) > 0 and "text" in message["content"][0]:
+                message["content"] = message["content"][0]["text"]
+            else:
+                message["content"] = ""
+
+    logger.info(f"[Strands Agents] trajectory length: {len(trajectory)}; last message: {trajectory[-1]}")
+    return trajectory
 
 
 async def generate(args, sample: Sample, sampling_params) -> Sample:
@@ -154,8 +143,8 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     if sample.status == Sample.Status.ABORTED:
         return sample
 
-    # Get the trajectory from the hook
-    trajectory = TrajectoryHook.get_trajectory(agent)
+    # Get the trajectory from the agent
+    trajectory = get_trajectory(agent)
     # Check if the trajectory is None, this is an infra bug, not a “recoverable” case
     if trajectory is None:
         raise RuntimeError(
