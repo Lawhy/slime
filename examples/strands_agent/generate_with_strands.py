@@ -266,12 +266,12 @@ async def reward_func(args, sample, **kwargs):
         result["pred"] = ""
 
     logger.info(
-        "[Strands Agents] sample summary: ",
-        f"status={sample.status} |",
-        f"tool_call_count={sample.tool_call_count} | ",
-        f"response_length={sample.response_length} | ",
-        f"reward={result} | ",
-        f"ground_truth={ground_truth} | ",
+        f"[Strands Agents] sample summary: "
+        f"status={sample.status} | "
+        f"tool_call_count={sample.tool_call_count} | "
+        f"response_length={sample.response_length} | "
+        f"reward={result} | "
+        f"ground_truth={ground_truth}"
     )
 
     return result
