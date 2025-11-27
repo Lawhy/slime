@@ -23,15 +23,19 @@ from generate_with_strands import generate, reward_func
 from slime.utils.types import Sample
 
 
+DEFAULT_DATA_PATH = "/root/data/dapo-math-17k.jsonl"
+
+
 async def main():
+    data_path = input(f"Enter path to .jsonl data file (default: {DEFAULT_DATA_PATH}): ").strip() or DEFAULT_DATA_PATH
     # Load one random sample
-    with open("/shared/dev/lawhy/data/dapo-math-17k.jsonl") as f:
+    with open(data_path) as f:
         samples = [json.loads(line) for line in f]
 
     sample = random.choice(samples)
     sample = Sample(prompt=sample["prompt"], label=sample["label"])
 
-    # Simple args for your Qwen3-8B server
+    # Simple args for Qwen3-8B server
     args = Namespace(
         model_name="Qwen/Qwen3-8B",
         hf_checkpoint="Qwen/Qwen3-8B",
@@ -42,7 +46,7 @@ async def main():
         rollout_num_gpus=8,
         rollout_num_gpus_per_engine=8,
         rollout_temperature=1.0,
-        rollout_top_p=1.0,
+        rollout_top_p=0.7,
         rollout_top_k=-1,
         rollout_max_response_len=20480,
         rollout_stop=None,
@@ -52,23 +56,20 @@ async def main():
         rollout_seed=42,
         n_samples_per_prompt=1,
     )
-
     sampling_params = {"max_new_tokens": 20480, "temperature": 1.0, "top_p": 1.0}
 
     print("Testing generate function with Qwen3-8B...")
 
     # Generate
-    result = await generate(args, sample, sampling_params)
-
-    print(f"\nResponse:\n{result.response}\n")
-
-    print(f"Status: {result.status}")
-    print(f"Tool Calls: {getattr(result, 'tool_call_count', 0)}")
+    sample = await generate(args, sample, sampling_params)
+    print(f"\nResponse:\n{sample.response}\n")
+    print(f"Status: {sample.status}")
+    print(f"Response Length: {sample.response_length}")
+    print(f"Tool Calls: {getattr(sample, 'tool_call_count', 0)}")
 
     # Compute reward
-    if not result.status == Sample.Status.ABORTED:
-        reward = await reward_func(args, result)
-
+    if not sample.status == Sample.Status.ABORTED:
+        reward = await reward_func(args, sample)
         print(f"Ground Truth: {sample.label}\n")
         print(f"Score: {reward['score']}")
         print(f"Predicted: {reward['pred']}")
