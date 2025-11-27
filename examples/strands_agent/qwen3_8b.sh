@@ -72,7 +72,7 @@ PERF_ARGS=(
 
    # --micro-batch-size 1
    --use-dynamic-batch-size
-   --max-tokens-per-gpu 16384  # H200 has 141GB, can handle more tokens
+   --max-tokens-per-gpu 20480
 )
 
 GRPO_ARGS=(
@@ -102,8 +102,8 @@ WANDB_ARGS=(
 )
 
 SGLANG_ARGS=(
-   --rollout-num-gpus-per-engine 2  # Use TP=2 for inference
-   --sglang-mem-fraction-static 0.4  # Leave more memory for training on H200
+   --rollout-num-gpus-per-engine 1
+   --sglang-mem-fraction-static 0.4
    --sglang-tool-call-parser qwen  # Enable tool call parsing for Strands Agent
 )
 
