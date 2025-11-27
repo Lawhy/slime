@@ -101,16 +101,12 @@ async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
         else:
             sample_status = Sample.Status.ABORTED
         logger.error(f"[Strands Agents] inference not completed due to exception: {e}")
-    finally:
-        logger.info(f"[Strands Agents] message length: {len(agent.messages)}")
-        pass
 
     return sample_status
 
 
 def get_trajectory(agent: Agent) -> list[dict]:
     """Get the chat template-compatible trajectory of the strands agent."""
-    logger.info(f"[Strands Agents] Getting trajectory from {len(agent.messages)} agent messages")
     openai_model: OpenAIModel = agent.model
     trajectory = openai_model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt)
     # Convert content from list[dict] format to string format for chat template
@@ -123,7 +119,6 @@ def get_trajectory(agent: Agent) -> list[dict]:
             else:
                 message["content"] = ""
 
-    logger.info(f"[Strands Agents] trajectory length: {len(trajectory)}; last message: {trajectory[-1]}")
     return trajectory
 
 
