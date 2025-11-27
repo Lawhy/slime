@@ -25,10 +25,13 @@ echo "HAS_NVLINK: $HAS_NVLINK (detected $NVLINK_COUNT NVLink references)"
 
 source "/shared/dev/lawhy/slime/scripts/models/qwen3-8B.sh"
 
+# Generate random suffix for save path
+RANDOM_SUFFIX=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 6)
+
 CKPT_ARGS=(
    --hf-checkpoint /shared/dev/lawhy/models/qwen3-8B
    --ref-load /shared/dev/lawhy/models/qwen3-8B_torch_dist
-   --save /shared/dev/lawhy/models/qwen3-8B_strands_dapo
+   --save /shared/dev/lawhy/models/qwen3-8B_strands_dapo_${RANDOM_SUFFIX}
    --save-interval 20
 )
 
@@ -38,7 +41,7 @@ ROLLOUT_ARGS=(
    --label-key label
    --rollout-shuffle
    --reward-key score
-   --num-rollout 3000
+   --num-rollout 100
    --rollout-batch-size 32
    --n-samples-per-prompt 8
    --rollout-max-response-len 20480

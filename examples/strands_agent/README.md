@@ -23,8 +23,8 @@ cd /root/slime
 source scripts/models/qwen3-8B.sh
 PYTHONPATH=/root/Megatron-LM python tools/convert_hf_to_torch_dist.py \
     ${MODEL_ARGS[@]} \
-    --hf-checkpoint /root/models/qwen3-8B \
-    --save /root/models/qwen3-8B_torch_dist
+    --hf-checkpoint /shared/dev/lawhy/models/qwen3-8B \
+    --save /shared/dev/lawhy/models/qwen3-8B_torch_dist
 ```
 
 ## Prepare Dataset
