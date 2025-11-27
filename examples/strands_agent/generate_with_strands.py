@@ -147,14 +147,20 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
 
     # Run the strands agent
     sample.status = await run_strands_agent(agent, prompt_text)
-    trajectory = trajectory_hook.trajectory
-
-    # from ipdb import set_trace; set_trace()
 
     if sample.status == Sample.Status.ABORTED:
         return sample
 
-    # Step 1: Get the initial prompt (system + user message)
+    # Get the trajectory from the hook
+    trajectory = trajectory_hook.trajectory
+    # Check if the trajectory is None, this is an infra bug, not a “recoverable” case
+    if trajectory is None:
+        raise RuntimeError(
+            "[Strands Agents] trajectory is `None` after `await agent.invoke_async(prompt=prompt)`; "
+            "this run should not be used for training."
+        )
+
+    # Get the initial prompt (system + user message)
     initial_prompt_messages = [msg for msg in trajectory if msg["role"] in ["system", "user"]]
     assert len(initial_prompt_messages) == 2, "Initial prompt messages must be exactly 2 for single-turn conversations"
     prompt_text = state.tokenizer.apply_chat_template(
@@ -164,7 +170,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     )
     prompt_tokens_ids = state.tokenizer(prompt_text, add_special_tokens=False)["input_ids"]
 
-    # Step 2: Build response incrementally, tokenizing each message as we go
+    # Build (re-tokenize) the response incrementally
     response_token_ids = []
     loss_masks = []
     response_text = ""
