@@ -79,12 +79,11 @@ def create_strands_agent(args, sampling_params):
     )
     # Set a longer timeout for tool calls and multi-turn conversations
     # Tool calls can take longer: model generation + tool execution + continued conversation
-    client_timeout = getattr(args, "sglang_router_request_timeout_secs", 300)  # Use router timeout or default to 1 hour
     model = OpenAIModel(
         client_args={
             "api_key": "EMPTY",
             "base_url": sglang_server_url,
-            "timeout": float(client_timeout),  # Match router timeout for consistency
+            "timeout": 300.0,  # 5 minutes
         },
         model_id=args.hf_checkpoint.split("/")[-1],
         params=model_params,
@@ -103,7 +102,7 @@ def create_strands_agent(args, sampling_params):
         """
         code_execution_toolkit = CodeExecutionToolkit(
             sandbox="subprocess",
-            timeout=60,
+            timeout=60.0,  # 1 minute
         )
         return code_execution_toolkit.execute_code(code=code, code_type="python")
 
