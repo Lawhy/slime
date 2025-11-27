@@ -66,7 +66,7 @@ def create_strands_agent(args, sampling_params) -> Agent:
         )
         return code_execution_toolkit.execute_code(code=code, code_type="python")
 
-    agent = Agent(model=model, tools=[execute_python_code], system_prompt=SYSTEM_PROMPT, callback_handler=None)
+    agent = Agent(model=model, tools=[execute_python_code], system_prompt=SYSTEM_PROMPT)
     return agent
 
 
@@ -81,11 +81,11 @@ async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
         # Use invoke_async (the intended API) which properly handles the event loop
         await agent.invoke_async(prompt=prompt)
         
-        # The generator's finally block may schedule async operations that need time to complete.
-        # The breakpoint works because it pauses execution, giving time for async operations to finish.
-        # We add a small fixed delay to ensure all async cleanup completes.
-        # This is deterministic and non-blocking for other concurrent operations.
-        await asyncio.sleep(0.01)  # 10ms delay - small enough to not block, large enough for cleanup
+        # # The generator's finally block may schedule async operations that need time to complete.
+        # # The breakpoint works because it pauses execution, giving time for async operations to finish.
+        # # We add a small fixed delay to ensure all async cleanup completes.
+        # # This is deterministic and non-blocking for other concurrent operations.
+        # await asyncio.sleep(0.01)  # 10ms delay - small enough to not block, large enough for cleanup
         
         # Set status as completed
         sample_status = Sample.Status.COMPLETED
