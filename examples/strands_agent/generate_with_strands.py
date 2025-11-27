@@ -99,13 +99,15 @@ async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
             isinstance(e, EventLoopException)
             and isinstance(e.original_exception, openai.APIError)
             and "context length" in str(e.original_exception).lower(),
+            isinstance(e, openai.APIError) and "context length" in str(e).lower(),
         ]
 
         if any(truncated_conditions):
             sample_status = Sample.Status.TRUNCATED
+            logger.warning(f"[Strands Agents] sample is TRUNCATED due to exception: {e}")
         else:
             sample_status = Sample.Status.ABORTED
-        logger.error(f"[Strands Agents] inference not completed due to exception: {e}")
+            logger.error(f"[Strands Agents] sample is ABORTED due to exception: {e}")
 
     return sample_status
 
