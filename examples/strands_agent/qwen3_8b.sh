@@ -104,6 +104,7 @@ WANDB_ARGS=(
 SGLANG_ARGS=(
    --rollout-num-gpus-per-engine 2  # Use TP=2 for inference
    --sglang-mem-fraction-static 0.4  # Leave more memory for training on H200
+   --sglang-tool-call-parser qwen  # Enable tool call parsing for Strands Agent
 )
 
 MISC_ARGS=(

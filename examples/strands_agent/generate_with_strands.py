@@ -104,16 +104,16 @@ def create_strands_agent(args, sampling_params):
         return code_execution_toolkit.execute_code(code=code, code_type="python")
 
     # Create a completion event to track when invocation finishes
-    trajectory_hook = TrajectoryHook()
+    # trajectory_hook = TrajectoryHook()
 
     agent = Agent(
         model=model,
         tools=[execute_python_code],
         system_prompt=SYSTEM_PROMPT,
-        hooks=[trajectory_hook],
+        # hooks=[trajectory_hook],
         callback_handler=None,
     )
-    return agent, trajectory_hook
+    return agent # , trajectory_hook
 
 
 async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
@@ -142,7 +142,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     state = GenerateState(args)
 
     # Create strands agent and run it with the sample prompt
-    agent, trajectory_hook = create_strands_agent(args, sampling_params)
+    agent = create_strands_agent(args, sampling_params)
     prompt_text = sample.prompt if isinstance(sample.prompt, str) else sample.prompt[0]["content"]
 
     # Run the strands agent
@@ -152,7 +152,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
         return sample
 
     # Get the trajectory from the hook
-    trajectory = trajectory_hook.trajectory
+    trajectory = TrajectoryHook.get_trajectory(agent)
     # Check if the trajectory is None, this is an infra bug, not a “recoverable” case
     if trajectory is None:
         raise RuntimeError(
