@@ -41,7 +41,7 @@ ROLLOUT_ARGS=(
    --label-key label
    --rollout-shuffle
    --reward-key score
-   --num-rollout 200
+   --num-rollout 300
    --rollout-batch-size 32
    --n-samples-per-prompt 8
    --rollout-max-response-len 16384
@@ -52,14 +52,14 @@ ROLLOUT_ARGS=(
    --balance-data
 )
 
-EVAL_ARGS=(
-   --eval-interval 20
-   --eval-prompt-data aime  /shared/dev/lawhy/data/aime-2024.jsonl
-   --n-samples-per-eval-prompt 8
-   --eval-max-response-len 16384
-   --eval-temperature 1.0
-   --eval-top-p 0.7
-)
+# EVAL_ARGS=(
+#    --eval-interval 20
+#    --eval-prompt-data aime  /shared/dev/lawhy/data/aime-2024.jsonl
+#    --n-samples-per-eval-prompt 8
+#    --eval-max-response-len 16384
+#    --eval-temperature 1.0
+#    --eval-top-p 0.7
+# )
 
 PERF_ARGS=(
    --tensor-model-parallel-size 2

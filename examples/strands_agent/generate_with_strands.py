@@ -142,6 +142,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     sample.status = await run_strands_agent(agent, prompt_text)
 
     if sample.status == Sample.Status.ABORTED:
+        agent.cleanup()
         return sample
 
     # Get the trajectory from the agent
@@ -235,6 +236,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
             }
         )
 
+    agent.cleanup()
     return sample
 
 
