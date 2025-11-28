@@ -1,10 +1,12 @@
 import logging
 
 from camel.interpreters import SubprocessInterpreter
+import openai
 from strands import Agent, tool
 from strands.models.openai import OpenAIModel
 from strands.types.exceptions import (
     ContextWindowOverflowException,
+    EventLoopException,
     MaxTokensReachedException,
 )
 import wandb
@@ -90,7 +92,14 @@ async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
         await agent.invoke_async(prompt=prompt)
         sample_status = Sample.Status.COMPLETED
     except Exception as e:
-        if isinstance(e, MaxTokensReachedException) or isinstance(e, ContextWindowOverflowException):
+        truncated_conditions = [
+            isinstance(e, MaxTokensReachedException),
+            isinstance(e, ContextWindowOverflowException),
+            isinstance(e, EventLoopException)
+            and isinstance(e.original_exception, openai.APIError)
+            and "context length" in str(e.original_exception).lower(),
+        ]
+        if any(truncated_conditions):
             sample_status = Sample.Status.TRUNCATED
             logger.warning(f"[Strands Agents] sample is TRUNCATED due to {type(e)}: {e}")
         else:
