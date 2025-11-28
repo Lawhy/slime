@@ -1,6 +1,6 @@
 import logging
 
-from camel.toolkits.code_execution import CodeExecutionToolkit
+from camel.interpreters import SubprocessInterpreter
 import openai
 from strands import Agent, tool
 from strands.models.openai import OpenAIModel
@@ -67,14 +67,13 @@ def create_strands_agent(args, sampling_params):
         Returns:
             str: The text output from the Code Execution tool call.
         """
-        code_execution_toolkit = CodeExecutionToolkit(
-            sandbox="subprocess",
-            timeout=60.0,  # 1 minute
+        interpreter = SubprocessInterpreter(
+            require_confirm=False,
+            print_stdout=True,
+            print_stderr=True,
+            execution_timeout=60.0,
         )
-        return code_execution_toolkit.execute_code(code=code, code_type="python")
-
-    # Create a completion event to track when invocation finishes
-    # trajectory_hook = TrajectoryHook()
+        return interpreter.run(code=code, code_type="python")
 
     agent = Agent(
         model=model,
