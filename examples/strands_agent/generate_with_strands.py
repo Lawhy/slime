@@ -171,16 +171,12 @@ def get_trajectory(agent: Agent) -> list[dict]:
     """Get the chat template-compatible trajectory of the strands agent."""
     openai_model: OpenAIModel = agent.model
     trajectory = openai_model.format_request_messages(messages=agent.messages, system_prompt=agent.system_prompt)
-    # Convert content from list[dict] format to string format for chat template
-    # The strands library returns content as [{"type": "text", "text": "..."}]
-    # but the tokenizer's chat template expects just the string
     for message in trajectory:
         if "content" in message and isinstance(message["content"], list):
             if len(message["content"]) > 0 and "text" in message["content"][0]:
                 message["content"] = message["content"][0]["text"]
             else:
                 message["content"] = ""
-
     return trajectory
 
 
