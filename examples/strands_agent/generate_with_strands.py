@@ -208,6 +208,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
 
     # Get the trajectory from the agent
     trajectory = get_trajectory(agent)
+    assert len(trajectory) == len(agent.messages) + 1, "Trajectory length mismatch"
     # Check if the trajectory is None, this is an infra bug, not a “recoverable” case
     if trajectory is None:
         raise RuntimeError(
