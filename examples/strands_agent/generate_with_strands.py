@@ -1,9 +1,8 @@
 import logging
 from threading import Lock
 
-from camel.interpreters import SubprocessInterpreter
 import openai
-from strands import Agent, tool
+from strands import Agent
 from strands.hooks import (
     BeforeInvocationEvent,
     BeforeToolCallEvent,
@@ -16,6 +15,7 @@ from strands.types.exceptions import (
     EventLoopException,
     MaxTokensReachedException,
 )
+from strands_tools import calculator
 import wandb
 
 from slime.rollout.rm_hub.math_dapo_utils import (
@@ -30,12 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 SYSTEM_PROMPT = """
-You are a helpful math-solving assistant with access to the `execute_python_code` tool.
-
-Guidelines:
-- For any numerical or symbolic computation, always use the `execute_python_code` tool rather than performing calculations mentally.
-- Break problems into clear steps, calling the Python tool whenever computation is required.
-- After completing your reasoning, present the final result enclosed in \\boxed{}.
+You are a helpful math-solving assistant with access to the `calculator` tool. When you need to perform numerical or symbolic computation, always use the `calculator` tool rather than performing calculations mentally.
 """.strip()
 
 MAX_VALID_TOOL_CALLS = 10  # tool calls beyond this will be marked as throttled
@@ -105,31 +100,10 @@ def create_strands_agent(args, sampling_params):
         params=model_params,
     )
 
-    # Define the execute_code tool
-    @tool
-    def execute_python_code(code: str) -> str:
-        r"""Execute a given Python code snippet.
-
-        Args:
-            code (str): The input Python code to the Code Execution tool call.
-
-        Returns:
-            str: The text output from the Code Execution tool call.
-        """
-        interpreter = SubprocessInterpreter(
-            require_confirm=False,
-            print_stdout=False,
-            print_stderr=False,
-            execution_timeout=60.0,
-        )
-        result = interpreter.run(code=code, code_type="python")
-        logger.info(f"[Strands Agents] executing Python code: {code}and get execution result: {result}")
-        return result
-
-    limit_tool_counts = LimitToolCallHook(max_tool_counts={"execute_python_code": MAX_VALID_TOOL_CALLS})
+    limit_tool_counts = LimitToolCallHook(max_tool_counts={"calculator": MAX_VALID_TOOL_CALLS})
     agent = Agent(
         model=model,
-        tools=[execute_python_code],
+        tools=[calculator],
         system_prompt=SYSTEM_PROMPT,
         hooks=[limit_tool_counts],
         callback_handler=None,
