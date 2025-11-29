@@ -23,11 +23,11 @@ from generate_with_strands import generate, reward_func
 from slime.utils.types import Sample
 
 
-DEFAULT_DATA_PATH = "/root/data/dapo-math-17k.jsonl"
+DEFAULT_DATA_PATH = "/shared/dev/lawhy/data/dapo-math-17k.jsonl" # "/root/data/dapo-math-17k.jsonl"
 
 
 async def main():
-    data_path = input(f"Enter path to .jsonl data file (default: {DEFAULT_DATA_PATH}): ").strip() or DEFAULT_DATA_PATH
+    data_path = DEFAULT_DATA_PATH
     # Load one random sample
     with open(data_path) as f:
         samples = [json.loads(line) for line in f]

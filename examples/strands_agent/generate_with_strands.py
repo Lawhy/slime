@@ -41,6 +41,12 @@ Guidelines:
 MAX_TOOL_CALLS = 1
 
 
+class MaxToolCallReachedException(Exception):
+    """Exception raised when the maximum number of tool calls is reached"""
+
+    pass
+
+
 class LimitToolCallHook(HookProvider):
     """Limits the number of times a tool can be called per agent invocation"""
 
@@ -72,11 +78,15 @@ class LimitToolCallHook(HookProvider):
             tool_count = self.tool_counts.get(tool_name, 0) + 1
             self.tool_counts[tool_name] = tool_count
 
-        if max_tool_count and tool_count > max_tool_count:
-            event.cancel_tool = (
-                f"Tool '{tool_name}' has been invoked too many and is now being throttled. "
-                f"DO NOT CALL THIS TOOL ANYMORE "
-            )
+            # Check inside the lock to ensure atomicity with the increment
+            if max_tool_count and tool_count > max_tool_count:
+                event.cancel_tool = (
+                    f"Tool '{tool_name}' has been invoked too many and is now being throttled. "
+                    f"DO NOT CALL THIS TOOL ANYMORE "
+                )
+                raise MaxToolCallReachedException(
+                    f"Maximum tool call (={max_tool_count}) reached for tool '{tool_name}'"
+                )
 
 
 def create_strands_agent(args, sampling_params):
