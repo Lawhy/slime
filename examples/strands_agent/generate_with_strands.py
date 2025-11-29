@@ -193,6 +193,8 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     current_messages = list(initial_prompt_messages)
     prev_token_count = len(prompt_tokens_ids)
 
+    from ipdb import set_trace; set_trace()
+
     # Iterate through remaining messages (assistant and tool messages)
     for message in trajectory[len(initial_prompt_messages) :]:
         # Add this message to the conversation
