@@ -48,7 +48,7 @@ async def main():
         rollout_temperature=1.0,
         rollout_top_p=0.7,
         rollout_top_k=-1,
-        rollout_max_response_len=20480,
+        rollout_max_response_len=16384,
         rollout_stop=None,
         rollout_stop_token_ids=None,
         rollout_skip_special_tokens=True,
@@ -65,7 +65,7 @@ async def main():
     print(f"\nResponse:\n{sample.response}\n")
     print(f"Status: {sample.status}")
     print(f"Response Length: {sample.response_length}")
-    print(f"Number of messages: {len(sample.messages)}")
+    print(f"Number of messages: {sample.num_messages}")
     print(f"Tool Calls: {getattr(sample, 'tool_call_count', 0)}")
 
     # Compute reward
