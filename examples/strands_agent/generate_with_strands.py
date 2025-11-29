@@ -85,11 +85,11 @@ class LimitToolCallHook(HookProvider):
                     f"DO NOT CALL THIS TOOL ANYMORE "
                 )
                 # Wrap in EventLoopException to ensure it propagates and stops the agent
-                raise EventLoopException(
-                    MaxToolCallReachedException(
-                        f"Maximum tool call (={max_tool_count}) reached for tool '{tool_name}'"
-                    )
-                )
+                # raise EventLoopException(
+                #     MaxToolCallReachedException(
+                #         f"Maximum tool call (={max_tool_count}) reached for tool '{tool_name}'"
+                #     )
+                # )
 
 
 def create_strands_agent(args, sampling_params):
