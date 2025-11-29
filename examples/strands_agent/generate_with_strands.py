@@ -282,6 +282,9 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     # Store tool call count for reward calculation
     sample.tool_call_count = [message["role"] == "tool" for message in trajectory].count(True)
 
+    # Debug use
+    sample.num_messages = len(trajectory)
+
     # Log to wandb if available
     if wandb.run is not None:
         wandb.log(

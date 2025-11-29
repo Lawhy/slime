@@ -65,6 +65,7 @@ async def main():
     print(f"\nResponse:\n{sample.response}\n")
     print(f"Status: {sample.status}")
     print(f"Response Length: {sample.response_length}")
+    print(f"Number of messages: {len(sample.messages)}")
     print(f"Tool Calls: {getattr(sample, 'tool_call_count', 0)}")
 
     # Compute reward
