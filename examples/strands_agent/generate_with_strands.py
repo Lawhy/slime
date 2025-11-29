@@ -84,8 +84,11 @@ class LimitToolCallHook(HookProvider):
                     f"Tool '{tool_name}' has been invoked too many and is now being throttled. "
                     f"DO NOT CALL THIS TOOL ANYMORE "
                 )
-                raise MaxToolCallReachedException(
-                    f"Maximum tool call (={max_tool_count}) reached for tool '{tool_name}'"
+                # Wrap in EventLoopException to ensure it propagates and stops the agent
+                raise EventLoopException(
+                    MaxToolCallReachedException(
+                        f"Maximum tool call (={max_tool_count}) reached for tool '{tool_name}'"
+                    )
                 )
 
 
