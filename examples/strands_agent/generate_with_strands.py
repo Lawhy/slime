@@ -174,9 +174,9 @@ def get_trajectory(agent: Agent) -> list[dict]:
     # Convert content from list[dict] format to string format for chat template
     # The strands library returns content as [{"type": "text", "text": "..."}]
     # but the tokenizer's chat template expects just the string
-    from ipdb import set_trace; set_trace()
-    for message in trajectory:
-        message["content"] = message["content"][0]["text"]
+    # from ipdb import set_trace; set_trace()
+    # for message in trajectory:
+    #     message["content"] = message["content"][0]["text"]
 
     return trajectory
 
