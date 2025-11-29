@@ -159,10 +159,10 @@ async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
         ]
         if any(truncated_conditions):
             sample_status = Sample.Status.TRUNCATED
-            logger.warning(f"[Strands Agents] sample is TRUNCATED due to {type(e)}: {e}")
+            logger.warning(f"[Strands Agents] sample is TRUNCATED due to {type(e).__name__}: {e}")
         else:
             sample_status = Sample.Status.ABORTED
-            logger.error(f"[Strands Agents] sample is ABORTED due to {type(e)}: {e}")
+            logger.error(f"[Strands Agents] sample is ABORTED due to {type(e).__name__}: {e}")
 
     return sample_status
 
