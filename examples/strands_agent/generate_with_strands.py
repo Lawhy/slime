@@ -200,11 +200,9 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     # Get the trajectory from the agent
     trajectory = get_trajectory(agent)
     if not len(trajectory) == len(agent.messages) + 1:
-        logger.error(
-            f"DEBUG [Strands Agents] trajectory length (={len(trajectory)}) mismatch with agent messages (={len(agent.messages)})"
-            f"DEBUG [Strands Agents] trajectory: {trajectory}"
-            f"DEBUG [Strands Agents] agent messages: {agent.messages}"
-        )
+        logger.error(f"DEBUG [Strands Agents] trajectory length (={len(trajectory)}) mismatch with agent messages (={len(agent.messages)})")
+        logger.error(f"DEBUG [Strands Agents] trajectory: {[msg['role'] + ': ' + msg['content'][:30] for msg in trajectory]}")
+        logger.error(f"DEBUG [Strands Agents] agent messages: {[msg['role'] + ': ' + str(msg['content'])[:30] for msg in agent.messages]}")
         raise ValueError("DEBUG [Strands Agents] trajectory length mismatch")
 
     # Get the initial prompt (system + user message)
