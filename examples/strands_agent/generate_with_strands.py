@@ -1,8 +1,15 @@
 import logging
+from threading import Lock
 
 from camel.interpreters import SubprocessInterpreter
 import openai
 from strands import Agent, tool
+from strands.hooks import (
+    BeforeInvocationEvent,
+    BeforeToolCallEvent,
+    HookProvider,
+    HookRegistry,
+)
 from strands.models.openai import OpenAIModel
 from strands.types.exceptions import (
     ContextWindowOverflowException,
@@ -30,6 +37,46 @@ Guidelines:
 - Break problems into clear steps, calling the Python tool whenever computation is required.
 - After completing your reasoning, present the final result enclosed in \\boxed{}.
 """.strip()
+
+MAX_TOOL_CALLS = 1
+
+
+class LimitToolCallHook(HookProvider):
+    """Limits the number of times a tool can be called per agent invocation"""
+
+    def __init__(self, max_tool_counts: dict[str, int]):
+        """
+        Initializer.
+
+        Args:
+            max_tool_counts: A dictionary mapping tool names to max call counts for
+                tools. If a tool is not specified in it, the tool can be called as many
+                times as desired
+        """
+        self.max_tool_counts = max_tool_counts
+        self.tool_counts = {}
+        self._lock = Lock()
+
+    def register_hooks(self, registry: HookRegistry) -> None:
+        registry.add_callback(BeforeInvocationEvent, self.reset_counts)
+        registry.add_callback(BeforeToolCallEvent, self.intercept_tool)
+
+    def reset_counts(self, event: BeforeInvocationEvent) -> None:
+        with self._lock:
+            self.tool_counts = {}
+
+    def intercept_tool(self, event: BeforeToolCallEvent) -> None:
+        tool_name = event.tool_use["name"]
+        with self._lock:
+            max_tool_count = self.max_tool_counts.get(tool_name)
+            tool_count = self.tool_counts.get(tool_name, 0) + 1
+            self.tool_counts[tool_name] = tool_count
+
+        if max_tool_count and tool_count > max_tool_count:
+            event.cancel_tool = (
+                f"Tool '{tool_name}' has been invoked too many and is now being throttled. "
+                f"DO NOT CALL THIS TOOL ANYMORE "
+            )
 
 
 def create_strands_agent(args, sampling_params):
@@ -69,20 +116,23 @@ def create_strands_agent(args, sampling_params):
         """
         interpreter = SubprocessInterpreter(
             require_confirm=False,
-            print_stdout=True,
-            print_stderr=True,
+            print_stdout=False,
+            print_stderr=False,
             execution_timeout=60.0,
         )
-        return interpreter.run(code=code, code_type="python")
+        result = interpreter.run(code=code, code_type="python")
+        logger.info(f"[Strands Agents] executing Python code: {code}and get execution result: {result}")
+        return result
 
+    limit_tool_counts = LimitToolCallHook(max_tool_counts={"execute_python_code": MAX_TOOL_CALLS})
     agent = Agent(
         model=model,
         tools=[execute_python_code],
         system_prompt=SYSTEM_PROMPT,
-        # hooks=[trajectory_hook],
+        hooks=[limit_tool_counts],
         callback_handler=None,
     )
-    return agent  # , trajectory_hook
+    return agent
 
 
 async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
