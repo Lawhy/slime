@@ -144,11 +144,11 @@ async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
         await agent.invoke_async(prompt=prompt)
         sample_status = Sample.Status.COMPLETED
         if len(agent.messages) > MAX_NUM_MESSAGES:
-            agent.messages = agent.messages[:MAX_NUM_MESSAGES]
-            sample_status = Sample.Status.TRUNCATED
             logger.warning(
                 f"[Strands Agents] sample is TRUNCATED due to number of messages (={len(agent.messages)}) exceeding limit (={MAX_NUM_MESSAGES})"
             )
+            agent.messages = agent.messages[:MAX_NUM_MESSAGES]
+            sample_status = Sample.Status.TRUNCATED
     except Exception as e:
         truncated_conditions = [
             isinstance(e, MaxTokensReachedException),
