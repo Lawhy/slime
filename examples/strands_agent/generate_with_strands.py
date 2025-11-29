@@ -300,6 +300,8 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
             }
         )
 
+    from ipdb import set_trace; set_trace()
+
     agent.cleanup()
     return sample
 
