@@ -288,7 +288,7 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
     if wandb.run is not None:
         wandb.log(
             {
-                "debug/response_length": len(response_text),
+                "debug/response_length": len(sample.response_length),
                 "debug/available_tools": len(agent.tool_names),
                 "debug/tool_calls": sample.tool_call_count,
                 "debug/num_messages": len(trajectory),
