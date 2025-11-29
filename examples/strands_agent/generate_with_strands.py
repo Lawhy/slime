@@ -175,11 +175,7 @@ def get_trajectory(agent: Agent) -> list[dict]:
     # The strands library returns content as [{"type": "text", "text": "..."}]
     # but the tokenizer's chat template expects just the string
     for message in trajectory:
-        if "content" in message and isinstance(message["content"], list):
-            if len(message["content"]) > 0 and "text" in message["content"][0]:
-                message["content"] = message["content"][0]["text"]
-            else:
-                message["content"] = ""
+        message["content"] = message["content"][0]["text"]
 
     return trajectory
 
@@ -203,13 +199,9 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
 
     # Get the trajectory from the agent
     trajectory = get_trajectory(agent)
-    assert len(trajectory) == len(agent.messages) + 1, "Trajectory length mismatch"
-    # Check if the trajectory is None, this is an infra bug, not a “recoverable” case
-    if trajectory is None:
-        raise RuntimeError(
-            "[Strands Agents] trajectory is `None` after `await agent.invoke_async(prompt=prompt)`; "
-            "this run should not be used for training."
-        )
+    assert len(trajectory) == len(agent.messages) + 1, f"Trajectory length (={len(trajectory)}) mismatch with agent messages (={len(agent.messages)})"
+
+    from ipdb import set_trace; set_trace()
 
     # Get the initial prompt (system + user message)
     initial_prompt_messages = [msg for msg in trajectory if msg["role"] in ["system", "user"]]
