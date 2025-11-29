@@ -143,12 +143,6 @@ async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
         logger.info(f"[Strands Agents] running agent with prompt: {prompt}")
         await agent.invoke_async(prompt=prompt)
         sample_status = Sample.Status.COMPLETED
-        if len(agent.messages) > MAX_NUM_MESSAGES:
-            logger.warning(
-                f"[Strands Agents] sample is TRUNCATED due to number of messages (={len(agent.messages)}) exceeding limit (={MAX_NUM_MESSAGES})"
-            )
-            agent.messages = agent.messages[:MAX_NUM_MESSAGES]
-            sample_status = Sample.Status.TRUNCATED
     except Exception as e:
         truncated_conditions = [
             isinstance(e, MaxTokensReachedException),
@@ -197,13 +191,14 @@ async def generate(args, sample: Sample, sampling_params) -> Sample:
         agent.cleanup()
         return sample
 
-    # Get the trajectory from the agent
+    # Get the trajectory from the agent and truncate if necessary
     trajectory = get_trajectory(agent)
-    if not len(trajectory) == len(agent.messages) + 1:
-        logger.error(f"DEBUG [Strands Agents] trajectory length (={len(trajectory)}) mismatch with agent messages (={len(agent.messages)})")
-        logger.error(f"DEBUG [Strands Agents] trajectory: {[msg['role'] + ': ' + msg['content'][:30] for msg in trajectory]}")
-        logger.error(f"DEBUG [Strands Agents] agent messages: {[msg['role'] + ': ' + str(msg['content'])[:30] for msg in agent.messages]}")
-        raise ValueError("DEBUG [Strands Agents] trajectory length mismatch")
+    if len(trajectory) > MAX_NUM_MESSAGES:
+        logger.warning(
+            f"[Strands Agents] sample is TRUNCATED due to number of messages (={len(trajectory)}) exceeding limit (={MAX_NUM_MESSAGES})"
+        )
+        trajectory = trajectory[:MAX_NUM_MESSAGES]
+        sample.status = Sample.Status.TRUNCATED
 
     # Get the initial prompt (system + user message)
     initial_prompt_messages = [msg for msg in trajectory if msg["role"] in ["system", "user"]]
