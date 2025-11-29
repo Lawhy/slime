@@ -38,13 +38,8 @@ Guidelines:
 - After completing your reasoning, present the final result enclosed in \\boxed{}.
 """.strip()
 
-MAX_TOOL_CALLS = 1
-
-
-class MaxToolCallReachedException(Exception):
-    """Exception raised when the maximum number of tool calls is reached"""
-
-    pass
+MAX_VALID_TOOL_CALLS = 10  # tool calls beyond this will be marked as throttled
+MAX_NUM_MESSAGES = 16  # messages beyond this will be truncated
 
 
 class LimitToolCallHook(HookProvider):
@@ -84,12 +79,6 @@ class LimitToolCallHook(HookProvider):
                     f"Tool '{tool_name}' has been invoked too many and is now being throttled. "
                     f"DO NOT CALL THIS TOOL ANYMORE "
                 )
-                # Wrap in EventLoopException to ensure it propagates and stops the agent
-                # raise EventLoopException(
-                #     MaxToolCallReachedException(
-                #         f"Maximum tool call (={max_tool_count}) reached for tool '{tool_name}'"
-                #     )
-                # )
 
 
 def create_strands_agent(args, sampling_params):
@@ -137,7 +126,7 @@ def create_strands_agent(args, sampling_params):
         logger.info(f"[Strands Agents] executing Python code: {code}and get execution result: {result}")
         return result
 
-    limit_tool_counts = LimitToolCallHook(max_tool_counts={"execute_python_code": MAX_TOOL_CALLS})
+    limit_tool_counts = LimitToolCallHook(max_tool_counts={"execute_python_code": MAX_VALID_TOOL_CALLS})
     agent = Agent(
         model=model,
         tools=[execute_python_code],
@@ -154,6 +143,12 @@ async def run_strands_agent(agent: Agent, prompt: str) -> Sample.Status:
         logger.info(f"[Strands Agents] running agent with prompt: {prompt}")
         await agent.invoke_async(prompt=prompt)
         sample_status = Sample.Status.COMPLETED
+        if len(agent.messages) > MAX_NUM_MESSAGES:
+            agent.messages = agent.messages[:MAX_NUM_MESSAGES]
+            sample_status = Sample.Status.TRUNCATED
+            logger.warning(
+                f"[Strands Agents] sample is TRUNCATED due to number of messages (={len(agent.messages)}) exceeding limit (={MAX_NUM_MESSAGES})"
+            )
     except Exception as e:
         truncated_conditions = [
             isinstance(e, MaxTokensReachedException),
