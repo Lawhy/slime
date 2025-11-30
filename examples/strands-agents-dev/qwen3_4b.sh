@@ -32,7 +32,8 @@ CKPT_ARGS=(
    --hf-checkpoint /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507
    --ref-load /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507_torch_dist
    --load /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507_strands_dapo_1129
-   --save /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507_strands_dapo_${TIMESTAMP_SUFFIX}
+   --save /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507_strands_dapo_1129
+   # --save /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507_strands_dapo_${TIMESTAMP_SUFFIX}
    --save-interval 20
    --rotary-base 5000000
 )
@@ -62,7 +63,7 @@ EVAL_ARGS=(
 )
 
 PERF_ARGS=(
-   --tensor-model-parallel-size 2
+   --tensor-model-parallel-size 4
    --sequence-parallel
    --pipeline-model-parallel-size 1
    --context-parallel-size 1
@@ -106,7 +107,7 @@ WANDB_ARGS=(
 
 SGLANG_ARGS=(
    --rollout-num-gpus-per-engine 2
-   --sglang-mem-fraction-static 0.7
+   --sglang-mem-fraction-static 0.5
    --sglang-tool-call-parser qwen  # Enable tool call parsing for Strands Agent
 )
 
