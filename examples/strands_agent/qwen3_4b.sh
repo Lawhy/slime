@@ -52,13 +52,13 @@ ROLLOUT_ARGS=(
    --balance-data
 )
 
-# EVAL_ARGS=(
-#    --eval-interval 20
-#    --eval-prompt-data aime  /shared/dev/lawhy/data/aime-2024.jsonl
-#    --n-samples-per-eval-prompt 16
-#    --eval-max-response-len 16384
-#    --eval-top-p 0.7
-# )
+EVAL_ARGS=(
+   --eval-interval 20
+   --eval-prompt-data aime  /shared/dev/lawhy/data/aime-2024.jsonl
+   --n-samples-per-eval-prompt 16
+   --eval-max-response-len 16384
+   --eval-top-p 0.7
+)
 
 PERF_ARGS=(
    --tensor-model-parallel-size 2
