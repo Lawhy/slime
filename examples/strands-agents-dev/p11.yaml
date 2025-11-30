@@ -1,0 +1,125 @@
+apiVersion: batch.volcano.sh/v1alpha1
+kind: Job
+metadata:
+  name: lawhy-agent-dev-1129
+  namespace: application-nonprod
+spec:
+  maxRetry: 0
+  plugins:
+    env: []
+    svc:
+    - --publish-not-ready-addresses
+  queue: default
+  schedulerName: volcano
+  minAvailable: 1
+  
+  tasks:
+  - minAvailable: 1
+    name: worker
+    replicas: 1
+    template:
+      metadata:
+        annotations:
+          sidecar.istio.io/inject: "false"
+        labels:
+          app.kubernetes.io/managed-by: torchx.pytorch.org
+          torchx.pytorch.org/replica-id: "0"
+          torchx.pytorch.org/role-index: "0"
+          torchx.pytorch.org/role-name: worker
+          torchx.pytorch.org/version: 0.7.0
+      spec:
+        restartPolicy: Never
+        serviceAccountName: application-nonprod-sa
+        containers:
+        - name: ray-worker
+          image: slimerl/slime:latest
+          imagePullPolicy: Always
+          
+          resources:
+            requests:
+              cpu: 15900m
+              memory: 1810645M
+              nvidia.com/gpu: "8"
+              rdma/rdma_ib: "1"
+            limits:
+              cpu: 16000m
+              memory: 1811669M
+              nvidia.com/gpu: "8"
+              rdma/rdma_ib: "1"
+          
+          env:
+          - name: AWS_DEFAULT_REGION
+            value: us-west-2
+          - name: S3_TORCH_CONNECTOR_REGION
+            value: us-west-2
+          - name: MCORE_S3_REGION
+            value: us-west-2
+          - name: S3_TORCH_CONNECTOR_PART_SIZE_MB
+            value: "100"
+          - name: S3_TORCH_CONNECTOR_THROUGHPUT_TARGET_GPBS
+            value: "100"
+          - name: USER
+            value: xth
+          - name: VBOOST
+            value: "0"
+          - name: LOGLEVEL
+            value: INFO
+          - name: AWS_METADATA_SERVICE_TIMEOUT
+            value: "5"
+          - name: AWS_METADATA_SERVICE_NUM_ATTEMPTS
+            value: "10"
+          - name: CUDA_DEVICE_MAX_CONNECTIONS
+            value: "1"
+          - name: PYTHONBUFFERED
+            value: "16"
+          - name: no_proxy
+            value: "127.0.0.1,localhost"
+          - name: WANDB_API_KEY
+            value: "YOUR_API_KEY"
+          
+          # Working directory
+          workingDir: /shared/dev/
+          
+          # Command to run GRPO training
+          command: ["/bin/bash"]
+          args:
+          - -c
+          - |
+            cd /shared/dev/lawhy/
+            git clone https://github.com/Lawhy/slime.git
+            cd slime
+            git switch strands-agent
+            pip install -e .
+            cd /shared/dev/lawhy/slime/examples/strands_agent
+            pip install -r requirements.txt
+            sleep 100000000000
+          
+          ports:
+          - containerPort: 29500
+            name: c10d
+            protocol: TCP
+          volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+          - mountPath: /dev/gdrdrv
+            name: mount-0
+            readOnly: false
+          - mountPath: /shared
+            name: mount-1
+            readOnly: false
+          
+          securityContext:
+            privileged: true
+        
+        nodeSelector: {}
+        tolerations: []
+        volumes:
+        - emptyDir:
+            medium: Memory
+          name: dshm
+        - hostPath:
+            path: /run/nvidia/driver/dev/gdrdrv
+          name: mount-0
+        - hostPath:
+            path: /shared
+          name: mount-1
