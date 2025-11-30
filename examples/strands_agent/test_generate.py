@@ -58,7 +58,7 @@ async def main():
     )
     sampling_params = {"max_new_tokens": 20480, "temperature": 1.0, "top_p": 1.0}
 
-    print("Testing generate function with Qwen3-8B...")
+    print(f"Testing generate function with {args.model_name}...")
 
     # Generate
     sample = await generate(args, sample, sampling_params)
