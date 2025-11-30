@@ -31,7 +31,7 @@ TIMESTAMP_SUFFIX=$(date +%Y%m%d_%H%M%S)
 CKPT_ARGS=(
    --hf-checkpoint /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507
    --ref-load /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507_torch_dist
-   --load Qwen3-4B-Instruct-2507_strands_dapo_1129
+   --load /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507_strands_dapo_1129
    --save /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507_strands_dapo_${TIMESTAMP_SUFFIX}
    --save-interval 20
    --rotary-base 5000000
