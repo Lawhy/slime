@@ -56,7 +56,7 @@ async def main():
         rollout_seed=42,
         n_samples_per_prompt=1,
     )
-    sampling_params = {"max_new_tokens": 20480, "temperature": 1.0, "top_p": 1.0}
+    sampling_params = {"max_new_tokens": 8192, "temperature": 0.8, "top_p": 1.0}
 
     print(f"Testing generate function with {args.model_name}...")
 
