@@ -23,7 +23,7 @@ else
 fi
 echo "HAS_NVLINK: $HAS_NVLINK (detected $NVLINK_COUNT NVLink references)"
 
-source "/shared/dev/lawhy/slime/scripts/models/qwen3-8B.sh"
+source "/shared/dev/lawhy/slime/scripts/models/qwen3-4B.sh"
 
 # Generate random suffix for save path
 RANDOM_SUFFIX=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 6)
