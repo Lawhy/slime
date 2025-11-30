@@ -1,21 +1,14 @@
 import logging
-from threading import Lock
 
+from camel.interpreters import SubprocessInterpreter
 import openai
-from strands import Agent
-from strands.hooks import (
-    BeforeInvocationEvent,
-    BeforeToolCallEvent,
-    HookProvider,
-    HookRegistry,
-)
+from strands import Agent, tool
 from strands.models.openai import OpenAIModel
 from strands.types.exceptions import (
     ContextWindowOverflowException,
     EventLoopException,
     MaxTokensReachedException,
 )
-from strands_tools import calculator
 import wandb
 
 from slime.rollout.rm_hub.math_dapo_utils import (
@@ -30,51 +23,15 @@ logger = logging.getLogger(__name__)
 
 
 SYSTEM_PROMPT = """
-You are a helpful math-solving assistant with access to the `calculator` tool. When you need to perform numerical or symbolic computation, always use the `calculator` tool rather than performing calculations mentally.
+You are a helpful math-solving assistant with access to the `execute_python_code` tool.
+
+Guidelines:
+- For any numerical or symbolic computation, always use the `execute_python_code` tool rather than performing calculations mentally.
+- Break problems into clear steps, calling the Python tool whenever computation is required.
+- After completing your reasoning, present the final result enclosed in \\boxed{}.
 """.strip()
 
-MAX_VALID_TOOL_CALLS = 10  # tool calls beyond this will be marked as throttled
 MAX_NUM_MESSAGES = 16  # messages beyond this will be truncated
-
-
-class LimitToolCallHook(HookProvider):
-    """Limits the number of times a tool can be called per agent invocation"""
-
-    def __init__(self, max_tool_counts: dict[str, int]):
-        """
-        Initializer.
-
-        Args:
-            max_tool_counts: A dictionary mapping tool names to max call counts for
-                tools. If a tool is not specified in it, the tool can be called as many
-                times as desired
-        """
-        self.max_tool_counts = max_tool_counts
-        self.tool_counts = {}
-        self._lock = Lock()
-
-    def register_hooks(self, registry: HookRegistry) -> None:
-        registry.add_callback(BeforeInvocationEvent, self.reset_counts)
-        registry.add_callback(BeforeToolCallEvent, self.intercept_tool)
-
-    def reset_counts(self, event: BeforeInvocationEvent) -> None:
-        with self._lock:
-            self.tool_counts = {}
-
-    def intercept_tool(self, event: BeforeToolCallEvent) -> None:
-        tool_name = event.tool_use["name"]
-        with self._lock:
-            max_tool_count = self.max_tool_counts.get(tool_name)
-            tool_count = self.tool_counts.get(tool_name, 0) + 1
-            self.tool_counts[tool_name] = tool_count
-
-            # Check inside the lock to ensure atomicity with the increment
-            if max_tool_count and tool_count > max_tool_count:
-                event.cancel_tool = (
-                    f"Tool '{tool_name}' has been invoked too many and is now being throttled. "
-                    f"DO NOT CALL THIS TOOL ANYMORE "
-                )
-
 
 def create_strands_agent(args, sampling_params):
     # Create an OpenAI model from the SGLang server
@@ -100,12 +57,31 @@ def create_strands_agent(args, sampling_params):
         params=model_params,
     )
 
-    limit_tool_counts = LimitToolCallHook(max_tool_counts={"calculator": MAX_VALID_TOOL_CALLS})
+    # Define the execute_code tool
+    @tool
+    def execute_python_code(code: str) -> str:
+        r"""Execute a given Python code snippet.
+
+        Args:
+            code (str): The input Python code to the Code Execution tool call.
+
+        Returns:
+            str: The text output from the Code Execution tool call.
+        """
+        interpreter = SubprocessInterpreter(
+            require_confirm=False,
+            print_stdout=False,
+            print_stderr=False,
+            execution_timeout=60.0,
+        )
+        result = interpreter.run(code=code, code_type="python")
+        logger.info(f"[Strands Agents] executing Python code: {code}and get execution result: {result}")
+        return result
+
     agent = Agent(
         model=model,
-        tools=[calculator],
+        tools=[execute_python_code],
         system_prompt=SYSTEM_PROMPT,
-        hooks=[limit_tool_counts],
         callback_handler=None,
     )
     return agent

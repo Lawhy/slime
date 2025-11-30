@@ -16,15 +16,15 @@ This is a running example that connects the [Strands-Agents](https://github.com/
 
 ```bash
 # hf checkpoint
-huggingface-cli download Qwen/Qwen3-8B --local-dir /root/models/qwen3-8B
+huggingface-cli download Qwen/Qwen3-4B-Instruct-2507 --local-dir /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507
 
 # mcore checkpoint
 cd /root/slime
-source scripts/models/qwen3-8B.sh
+source scripts/models/qwen3-4B.sh
 PYTHONPATH=/root/Megatron-LM python tools/convert_hf_to_torch_dist.py \
     ${MODEL_ARGS[@]} \
-    --hf-checkpoint /shared/dev/lawhy/models/qwen3-8B \
-    --save /shared/dev/lawhy/models/qwen3-8B_torch_dist
+    --hf-checkpoint /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507 \
+    --save /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507_torch_dist
 ```
 
 ## Prepare Dataset
