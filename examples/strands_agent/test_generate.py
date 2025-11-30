@@ -3,7 +3,7 @@ Simple test script for generate function with Strands Agent
 
 # launch the server
 nohup python -m sglang.launch_server \
-    --model-path Qwen/Qwen3-8B \
+    --model-path Qwen/Qwen3-4B-Instruct-2507 \
     --port 8000 \
     --host 0.0.0.0 \
     --tool-call-parser qwen \
@@ -37,8 +37,8 @@ async def main():
 
     # Simple args for Qwen3-8B server
     args = Namespace(
-        model_name="Qwen/Qwen3-8B",
-        hf_checkpoint="Qwen/Qwen3-8B",
+        model_name="Qwen/Qwen3-4B-Instruct-2507",
+        hf_checkpoint="Qwen/Qwen3-4B-Instruct-2507",
         sglang_router_ip="localhost",
         sglang_router_port=8000,
         partial_rollout=False,
