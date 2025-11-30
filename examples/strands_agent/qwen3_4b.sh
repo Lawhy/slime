@@ -25,13 +25,14 @@ echo "HAS_NVLINK: $HAS_NVLINK (detected $NVLINK_COUNT NVLink references)"
 
 source "/shared/dev/lawhy/slime/scripts/models/qwen3-4B.sh"
 
-# Generate random suffix for save path
-RANDOM_SUFFIX=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 6)
+# Generate timestamp suffix for save path
+TIMESTAMP_SUFFIX=$(date +%Y%m%d_%H%M%S)
 
 CKPT_ARGS=(
    --hf-checkpoint /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507
    --ref-load /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507_torch_dist
-   --save /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507_strands_dapo_${RANDOM_SUFFIX}
+   --load /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507_strands_dapo_099G5m
+   --save /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507_strands_dapo_${TIMESTAMP_SUFFIX}
    --save-interval 20
    --rotary-base 5000000
 )
