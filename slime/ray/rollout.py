@@ -1,7 +1,9 @@
 import logging
 import multiprocessing
+import os
 import random
 import time
+from glob import glob
 from pathlib import Path
 from typing import List, Union
 
@@ -240,6 +242,8 @@ class RolloutManager:
             assert (
                 len(sample.loss_mask) == sample.response_length
             ), f"loss mask length {len(sample.loss_mask)} != response length {sample.response_length}"
+            if sample.remove_sample:
+                sample.loss_mask = [0] * sample.response_length
             loss_masks.append(sample.loss_mask)
         train_data["loss_masks"] = loss_masks
 
@@ -293,21 +297,41 @@ def init_rollout_engines(args, pg, all_rollout_engines):
             placement_group_bundle_index=reordered_bundle_indices[i * num_gpu_per_engine],
         )
 
+        env_vars = {name: "1" for name in NOSET_VISIBLE_DEVICES_ENV_VARS_LIST} | {
+            "SGL_JIT_DEEPGEMM_PRECOMPILE": "false",
+            "SGLANG_JIT_DEEPGEMM_PRECOMPILE": "false",
+            "SGL_DISABLE_TP_MEMORY_INBALANCE_CHECK": "true",
+            "SGLANG_DISABLE_TP_MEMORY_INBALANCE_CHECK": "true",
+            "SGLANG_MEMORY_SAVER_CUDA_GRAPH": "true",
+            "SGLANG_BATCH_INVARIANT_OPS_ENABLE_MM_FALLBACK_VARIANT": "true",
+            "SGLANG_ENABLE_HEALTH_ENDPOINT_GENERATION": "false",
+        }
+
+        # TODO: currently the amem position is hardcoded, change to a better way later.
+        # note that amem does not work with update weights from distributed.
+        if (
+            args.offload_rollout
+            and args.actor_num_nodes * args.actor_num_gpus_per_node >= args.rollout_num_gpus
+            and len(glob("/usr/local/lib/python3.12/dist-packages/nvidia/nccl/lib/libamem_nccl.so*")) > 0
+        ):
+            logger.info("Enable AMEM for rollout engine.")
+            ld_library_path = (
+                os.environ.get("LD_LIBRARY_PATH", "") + ":/usr/local/lib/python3.12/dist-packages/nvidia/nccl/lib"
+            )
+            env_vars |= {
+                "LD_LIBRARY_PATH": ld_library_path,
+                "NCCL_CUMEM_ENABLE": "1",
+                "AMEM_ENABLE": "1",
+                "AMEM_GROUPID": "0",
+                "GMM_LOG": "2",
+            }
+
         rollout_engine = RolloutRayActor.options(
             num_cpus=num_cpus,
             num_gpus=num_gpus,
             scheduling_strategy=scheduling_strategy,
             runtime_env={
-                "env_vars": {name: "1" for name in NOSET_VISIBLE_DEVICES_ENV_VARS_LIST}
-                | {
-                    "SGL_JIT_DEEPGEMM_PRECOMPILE": "false",
-                    "SGLANG_JIT_DEEPGEMM_PRECOMPILE": "false",
-                    "SGL_DISABLE_TP_MEMORY_INBALANCE_CHECK": "true",
-                    "SGLANG_DISABLE_TP_MEMORY_INBALANCE_CHECK": "true",
-                    "SGLANG_MEMORY_SAVER_CUDA_GRAPH": "true",
-                    "SGLANG_BATCH_INVARIANT_OPS_ENABLE_MM_FALLBACK_VARIANT": "true",
-                    "SGLANG_ENABLE_HEALTH_ENDPOINT_GENERATION": "false",
-                }
+                "env_vars": env_vars,
             },
         ).remote(args, rank=i)
 
