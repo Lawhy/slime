@@ -29,9 +29,9 @@ source "/shared/dev/lawhy/slime/scripts/models/qwen3-8B.sh"
 RANDOM_SUFFIX=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 6)
 
 CKPT_ARGS=(
-   --hf-checkpoint /shared/dev/lawhy/models/qwen3-8B
-   --ref-load /shared/dev/lawhy/models/qwen3-8B_torch_dist
-   --save /shared/dev/lawhy/models/qwen3-8B_strands_dapo_${RANDOM_SUFFIX}
+   --hf-checkpoint /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507
+   --ref-load /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507_torch_dist
+   --save /shared/dev/lawhy/models/Qwen/Qwen3-4B-Instruct-2507_strands_dapo_${RANDOM_SUFFIX}
    --save-interval 20
    --rotary-base 5000000
 )
