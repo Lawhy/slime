@@ -75,7 +75,7 @@ def create_strands_agent(args, sampling_params):
             execution_timeout=60.0,
         )
         result = interpreter.run(code=code, code_type="python")
-        logger.info(f"[Strands Agents] executing Python code: {code}and get execution result: {result}")
+        logger.info(f"[Strands Agents] executing Python code: ```python\n{code}\n``` and get execution result: ```python\n{result}\n```")
         return result
 
     agent = Agent(
